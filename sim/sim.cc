@@ -65,7 +65,7 @@ void print_regs(void)
   }
   //putchar('\n');
   for (auto it = fregs_to_show.begin(); it != regs_to_show.end(); it++) {
-    printf("F%d: %d ", *it, float_reg[*it]);
+    printf("F%d: %f ", *it, float_reg[*it]);
   }
   //putchar('\n');
   // special registers
@@ -153,18 +153,17 @@ void exec_inst(void)
 /**--- read commands from stdin ---*/
 enum Comm read_commands(void)
 {
+  printf("%s", PROMPT);
+
   std::vector<std::string> v;
   std::string s;
 
-  printf("%s", PROMPT);
   std::getline(std::cin, s);  // input
 
   // split input string by ' ' and save them to a vector v
   std::stringstream ss{s};
   std::string buf;
-  while (std::getline(ss, buf, ' ')) {
-    v.push_back(buf);
-  }
+  while (std::getline(ss, buf, ' ')) v.push_back(buf);
 
   if (!s.compare("") || !s.compare("exit") || !s.compare("quit")) return NIL;
 
