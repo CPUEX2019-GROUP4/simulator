@@ -17,23 +17,23 @@
 #define COMPILE_J(opcode) (encode_j(opcode, std::stoi(v[1])))
 
 // Prototypes
-u_int32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
-u_int32_t encode_i(int opcode, int rs, int rt, int imm);
-u_int32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
-u_int32_t assemble(std::string inst);
-void print_assemble(std::string inst, u_int32_t enc);
+uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
+uint32_t encode_i(int opcode, int rs, int rt, int imm);
+uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
+uint32_t assemble(std::string inst);
+void print_assemble(std::string inst, uint32_t enc);
 
 
-void print_assemble(std::string inst, u_int32_t enc)
+void print_assemble(std::string inst, uint32_t enc)
 {
   std::cout << inst << " --> " << enc << std::endl;
 }
 
-u_int32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func)
+uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func)
 {
   //printf("opcode: %d, rd: %d, rs: %d, rt: %d, shift: %d, func: %d\n", opcode,
   //       rd, rs, rt, shift, func);
-  u_int32_t ret = 0;
+  uint32_t ret = 0;
 
   if (opcode >= 64) {std::cerr << "opcode (" << opcode  << ") >= 64\n";exit(1);}
   else ret |= (opcode & 0x3f) << 26;
@@ -51,10 +51,10 @@ u_int32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func)
   return ret;
 }
 
-u_int32_t encode_i(int opcode, int rs, int rt, int imm)
+uint32_t encode_i(int opcode, int rs, int rt, int imm)
 {
   //printf("opcode: %d, rt: %d, imm: %d, rs: %d\n", opcode, rt, imm, rs);
-  u_int32_t ret = 0;
+  uint32_t ret = 0;
 
   if (opcode >= 64) {std::cerr << "opcode (" << opcode  << ") >= 64\n";exit(1);}
   else ret |= (opcode & 0x3f) << 26;
@@ -68,10 +68,10 @@ u_int32_t encode_i(int opcode, int rs, int rt, int imm)
   return ret;
 }
 
-u_int32_t encode_j(int opcode, int addr)
+uint32_t encode_j(int opcode, int addr)
 {
   //printf("opcode: %d, addr: %d\n", opcode, addr);
-  u_int32_t ret = 0;
+  uint32_t ret = 0;
 
   if (opcode >= 64) {std::cerr << "opcode (" << opcode  << ") >= 64\n";exit(1);}
   else ret |= (opcode & 0x3f) << 26;
@@ -82,9 +82,9 @@ u_int32_t encode_j(int opcode, int addr)
 }
 
 /** 1命令をstringで受け取り、その機械語を吐く */
-u_int32_t assemble(std::string inst)
+uint32_t assemble(std::string inst)
 {
-  u_int32_t ret;
+  uint32_t ret;
 
   // split input string by ' ' and save them to a vector v
   std::vector<std::string> v;
@@ -92,7 +92,7 @@ u_int32_t assemble(std::string inst)
   std::string buf;
   while (std::getline(ss, buf, ' ')) v.push_back(buf); // XXX: really whitespace as separator?
 
-  if (v.empty()) {exit(1); /*return -1;*/} // empty
+  if (v.empty()) {printf("empty"); exit(1); /*return -1;*/} // empty. (unexpected)
 
   std::string op = v[0];
 
@@ -137,16 +137,28 @@ u_int32_t assemble(std::string inst)
   return ret;
 }
 
+void print_help(char *program_name)
+{
+  printf("USAGE: %s {{source}} {{destination}}\n"
+         "If destination is not given, a.out is used instead.\n", program_name);
+}
+
 int main(int argc, char **argv)
 {
-  if (argc != 3) {
-    printf("USAGE: %s {{source}} {{destination}}\n", argv[0]);
+  if (argc != 3 && argc != 2) {
+    print_help(argv[0]);
     exit(1);
   }
 
   std::ifstream ifs(argv[1]);
   std::ofstream ofs;
-  ofs.open(argv[2], std::ios::out|std::ios::binary|std::ios::trunc);
+
+  if (argc >= 3) ofs.open(argv[2], std::ios::out|std::ios::binary|std::ios::trunc);
+  else {
+    printf("output file is to be saved to 'a.out'\n");
+    ofs.open("a.out", std::ios::out|std::ios::binary|std::ios::trunc);
+  }
+
 
   if (ifs.fail()) {std::cerr << "failed to open " << argv[1] << "\n"; exit(1);}
   if (ofs.fail()) {std::cerr << "failed to open " << argv[2] << "\n"; exit(1);}
@@ -155,8 +167,9 @@ int main(int argc, char **argv)
 
   while (!ifs.eof()) {
     getline(ifs, inst);
-    u_int32_t ret = assemble(inst);
-    ofs.write((char*)&ret, 4);
+    if (!inst.compare("")) break;
+    uint32_t ret = assemble(inst);
+    ofs.write((char*)(&ret), 4);
   }
 
   ifs.close();

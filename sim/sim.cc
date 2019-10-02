@@ -33,7 +33,7 @@ void exec_inst(void);
 enum Comm read_commands(void);
 
 // registers
-u_int32_t *inst_reg;          // instruction register
+uint32_t *inst_reg;          // instruction register
 int pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
@@ -80,7 +80,7 @@ void init_inst(char *pathname)
   fin = fopen(pathname, "rb");
   if (fin == NULL) {perror("fopen"); exit(1);}
 
-  inst_reg = (u_int32_t*) malloc(LEN_INSTRUCTION * 4);  // 4 bytes per instruction
+  inst_reg = (uint32_t*) malloc(LEN_INSTRUCTION * 4);  // 4 bytes per instruction
   if (inst_reg == NULL) {perror("malloc"); exit(1);}
   total_inst = fread(inst_reg, 1, LEN_INSTRUCTION, fin) / 4;
   printf("loaded %d instructions.\n", total_inst);
@@ -90,19 +90,19 @@ void init_inst(char *pathname)
   return;
 }
 
-u_int32_t get_opcode(u_int32_t inst) {return (inst >> 26) & 0x3f;}
-u_int32_t get_rs(u_int32_t inst) {return (inst >> 21) & 0x1f;}
-u_int32_t get_rt(u_int32_t inst) {return (inst >> 16) & 0x1f;}
-u_int32_t get_rd(u_int32_t inst) {return (inst >> 11) & 0x1f;}
-u_int32_t get_shift(u_int32_t inst) {return (inst >> 6) & 0x1f;}
-u_int32_t get_funct(u_int32_t inst) {return (inst >> 0) & 0x3f;}
-u_int32_t get_imm(u_int32_t inst) {return (inst >> 0) & 0x0fff;}     // 2**16
-u_int32_t get_addr(u_int32_t inst) {return (inst >> 0) & 0x3ffffff;} // 2**26
+uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
+uint32_t get_rs(uint32_t inst) {return (inst >> 21) & 0x1f;}
+uint32_t get_rt(uint32_t inst) {return (inst >> 16) & 0x1f;}
+uint32_t get_rd(uint32_t inst) {return (inst >> 11) & 0x1f;}
+uint32_t get_shift(uint32_t inst) {return (inst >> 6) & 0x1f;}
+uint32_t get_funct(uint32_t inst) {return (inst >> 0) & 0x3f;}
+uint32_t get_imm(uint32_t inst) {return (inst >> 0) & 0x0fff;}     // 2**16
+uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;} // 2**26
 
 /** execute single instruction */
 void exec_inst(void)
 {
-  u_int32_t inst = inst_reg[pc];
+  uint32_t inst = inst_reg[pc];
 
   switch (get_opcode(inst)) {
     case 0x00:
@@ -208,7 +208,7 @@ enum Comm read_commands(void)
 
 void test(void)
 {
-  u_int32_t inst = (u_int32_t) 537001986;
+  uint32_t inst = (uint32_t) 537001986;
   printf("t: %d\n", $t);
   $t = 3;
   printf("t: %d\n", $t);
