@@ -15,6 +15,7 @@
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 10000
 #define N_REG 32
+#define SIZE_MEM 4096
 
 #define DELAY_SLOT 4
 
@@ -22,7 +23,7 @@
 #define $t (int_reg[get_rt(inst)])
 #define $d (int_reg[get_rd(inst)])
 
-enum Comm {STEP, PRINT, BREAK, HELP, NIL, ERR};
+enum Comm {STEP, PRINT, BREAK, HELP, NIL, ERR, NOP, OP};
 
 // Parameters
 const char PROMPT[] = "(ryo) ";
@@ -31,15 +32,17 @@ const char PROMPT[] = "(ryo) ";
 void show_help(void);
 void print_regs(void);
 void init_inst(char *pathname);
-void exec_inst(void);
+enum Comm exec_inst(uint32_t);
+enum Comm exec_inst(void);
 enum Comm read_commands(void);
 
 // registers
-uint32_t *inst_reg;          // instruction register
+uint32_t *inst_reg;           // instruction register
 int pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
 int32_t LO, HI;               // special registers
+std::array<char, SIZE_MEM> mem;           // memory
 
 // Meta variables
 std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
@@ -74,6 +77,14 @@ void print_regs(void)
   printf("LO: %d, HI: %d\n", LO, HI);
 }
 
+/**--- strcpy()のnull文字付加なしver ---*/
+int copy(char *dst, char *src, int n)
+{
+  int i = 0;
+  for (; i<n; i++) dst[i] = src[i];
+  return i;
+}
+
 /**--- read instructions from a file and save them to inst_reg ---*/
 void init_inst(char *pathname)
 {
@@ -102,11 +113,21 @@ uint32_t get_imm(uint32_t inst) {return (inst >> 0) & 0x0fff;}     // 2**16
 uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;} // 2**26
 
 /** execute single instruction */
-void exec_inst(void)
+enum Comm exec_inst(void)
 {
-  uint32_t inst = inst_reg[pc];
+  if (!(0 <= pc && pc < total_inst)) {
+    printf("pc out of index. abort. %d of %d\n", pc, total_inst);
+    exit(1);
+  }
+  return exec_inst(inst_reg[pc]);
+}
 
+/** execute single instruction */
+enum Comm exec_inst(uint32_t inst)
+{
   switch (get_opcode(inst)) {
+    case 0x09:
+      return NOP;   // nop
     case 0x00:
       switch (get_funct(inst)) {
         case 0x00:  // sll
@@ -115,7 +136,6 @@ void exec_inst(void)
           pc++; break;
         case 0x1a:  // div
           printf("div r%d, r%d\n", get_rs(inst), get_rt(inst));
-          printf("rs: %d, rt: %d\n", $s, $t);
           LO = $s / $t;
           HI = $s % $t;
           pc++; break;
@@ -173,9 +193,13 @@ void exec_inst(void)
       printf("j %d\n", get_addr(inst));
       pc = get_addr(inst);
       break;
+    case 0x21:      // lw
+      printf("lw r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
+      copy((char*)(&($t)), &mem[$s + get_imm(inst)], 4);
+      pc++; break;
     case 0x2b:      // sw
-      printf("sw r%d, %d(r%d)", get_rt(inst), get_imm(inst), get_rs(inst));
-      //XXX: 未完
+      printf("sw r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
+      copy(&mem[$s + get_imm(inst)], (char*)(&($t)), 4);
       pc++; break;
     case 0x03:      // jal
       printf("jal %d\n", get_imm(inst));
@@ -200,105 +224,7 @@ void exec_inst(void)
       fprintf(stderr, "Unknown opcode: %d\n", get_opcode(inst));
       exit(1);
   }
-}
-/** execute single instruction */
-void exec_inst(uint32_t inst)
-{
-  //uint32_t inst = inst_reg[pc];
-
-  switch (get_opcode(inst)) {
-    case 0x00:
-      switch (get_funct(inst)) {
-        case 0x00:  // sll
-          $d = $t << get_imm(inst);
-          printf("sll r%d, r%d, %d\n", get_rd(inst), get_rt(inst), get_imm(inst));
-          pc++; break;
-        case 0x1a:  // div
-          LO = $s / $t;
-          HI = $s % $t;
-          printf("div r%d, %d\n", get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x1b:  // divu
-          LO = (unsigned)$s / (unsigned)$t;
-          HI = (unsigned)$s % (unsigned)$t;
-          printf("divu r%d, r%d\n", get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x02:  // srl
-          $d = $t >> get_imm(inst); //XXX check if 0 is extended
-          printf("srl r%d, r%d, %d\n", get_rd(inst), get_rt(inst), get_imm(inst));
-          pc++; break;
-        case 0x03:  // sra
-          $d = $t >> get_imm(inst); //XXX check if sign is extended
-          printf("sra r%d, r%d, %d\n", get_rd(inst), get_rt(inst), get_imm(inst));
-          pc++; break;
-        case 0x08:  // jr
-          pc = $s;
-          printf("jr r%d\n", get_rs(inst));
-          break;
-        case 0x20:  // add
-          $d = $s + $t;
-          printf("add r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x22:  // sub
-          $d = $s - $t;
-          printf("sub r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x24:  // and
-          $d = $s & $t;
-          printf("and r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x25:  // or
-          $d = $s | $t;
-          printf("or r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x26:  // xor
-          $d = $s ^ $t;
-          printf("xor r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          pc++; break;
-        case 0x27:  // nor
-          $d = ~($s | $t);
-          printf("nor r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          pc++; break;
-        default:
-          fprintf(stderr, "Unknown funct: %d\n", get_funct(inst));
-          exit(1);
-      }
-      break;
-    case 0x0f:      // lui
-      $t = get_imm(inst) << 16;
-      printf("lui r%d, %d\n", get_rt(inst), get_imm(inst));
-      pc++; break;
-    case 0x02:      // j
-      printf("j %d\n", get_addr(inst));
-      pc = get_addr(inst);
-      break;
-    case 0x2b:      // sw
-      //XXX: 未完
-      printf("sw r%d, %d(r%d)", get_rt(inst), get_imm(inst), get_rs(inst));
-      pc++; break;
-    case 0x03:      // jal
-      printf("jal %d\n", get_imm(inst));
-      int_reg[31] = pc + 1;   // XXX: 遅延スロットを使うなら+2にする
-      pc += ((int_reg[DELAY_SLOT] >> 28) & 0x1f) | get_addr(inst);
-      break;
-    case 0x04:      // beq
-      printf("beq r%d, r%d, %d\n", get_rs(inst), get_rt(inst), get_imm(inst));
-      if ($s == $t) pc += 1 + get_imm(inst);
-      else pc++;
-      break;
-    case 0x05:      // bne
-      printf("bne r%d, r%d, %d\n", get_rs(inst), get_rt(inst), get_imm(inst));
-      if ($s != $t) pc += 1 + get_imm(inst);
-      else pc++;
-      break;
-    case 0x08:      // addi
-      $t = $s + get_imm(inst);
-      printf("addi r%d, r%d, %d\n", get_rt(inst), get_rs(inst), get_imm(inst));
-      pc++; break;
-    default:
-      fprintf(stderr, "Unknown opcode: %d\n", get_opcode(inst));
-      exit(1);
-  }
+  return OP;
 }
 
 /**--- read commands from stdin ---*/
@@ -355,14 +281,6 @@ enum Comm read_commands(void)
 
   printf("something unexpexted has happend\n");
   return ERR;
-}
-
-void test(void)
-{
-  uint32_t inst = (uint32_t) 2234400;
-  exec_inst(inst);
-  inst = (uint32_t) 23685152;
-  exec_inst(inst);
 }
 
 int main(int argc, char **argv)

@@ -89,7 +89,9 @@ uint32_t assemble(std::string inst)
   std::vector<std::string> v;
   std::stringstream ss{inst};
   std::string buf;
-  while (std::getline(ss, buf, ' ')) v.push_back(buf); // XXX: really whitespace as separator?
+  while (std::getline(ss, buf, ' ')) {
+    if (buf.compare("")) v.push_back(buf); // XXX: really whitespace as separator?
+  }
 
   if (v.empty()) {printf("empty"); exit(1); /*return -1;*/} // empty. (unexpected)
 
@@ -129,6 +131,8 @@ uint32_t assemble(std::string inst)
   else if (!op.compare("jr")) ret = encode_r(0x00, $r(1), 0x00, 0x00, 0x00, 0x08);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
   // Others
+  else if (!op.compare("nop")) ret = encode_r(0x09, 0x00, 0x00, 0x00, 0x00, 0x00); // NOP
+
   else {std::cerr << "Unknown instruction: " << inst << std::endl; exit(1);}
 
   print_assemble(inst, ret);
