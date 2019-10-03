@@ -1,3 +1,5 @@
+all: sim swap assemble
+
 sim: sim.cc
 	g++ -Wall sim.cc -o sim
 

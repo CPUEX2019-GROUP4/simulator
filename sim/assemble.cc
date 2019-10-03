@@ -12,9 +12,8 @@
 #include <sstream>
 #include <fstream>
 
-#define COMPILE_R(opcode,shift,func) (encode_r(opcode, std::stoi(v[2].substr(1)), std::stoi(v[3].substr(1)), std::stoi(v[1].substr(1)), shift, func))
-#define COMPILE_I(opcode) (encode_i(opcode, std::stoi(v[3].substr(1)), std::stoi(v[1].substr(1)), std::stoi(v[2])))
-#define COMPILE_J(opcode) (encode_j(opcode, std::stoi(v[1])))
+#define $(i) (std::stoi(v[i]))
+#define $r(i) (std::stoi(v[i].substr(1)))
 
 // Prototypes
 uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
@@ -97,38 +96,38 @@ uint32_t assemble(std::string inst)
   std::string op = v[0];
 
   // Arithmetic
-  if (!op.compare("add")) ret = COMPILE_R(0x00, 0x00, 0x20); // add
-  else if (!op.compare("sub")) ret = COMPILE_R(0x00, 0x00, 0x22); // sub
-  else if (!op.compare("addi")) ret = COMPILE_R(0x08, 0x00, 0x00); // addi
-  else if (!op.compare("mult")) ret = COMPILE_R(0x00, 0x00, 0x18); // mult
-  else if (!op.compare("div")) ret = COMPILE_R(0x00, 0x00, 0x1a); // div
+  if (!op.compare("add")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x20);
+  else if (!op.compare("sub")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x22);
+  else if (!op.compare("addi")) ret = encode_i(0x08, $r(2), $r(1), $(3));
+  else if (!op.compare("mult")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x18);
+  else if (!op.compare("div")) ret = encode_r(0x00, $r(1), $r(2), 0x00, 0x00, 0x1a);
   // Load/Store
-  else if (!op.compare("lw")) ret = COMPILE_I(0x23);  // lw
-  else if (!op.compare("lh")) ret = COMPILE_I(0x21);  // lh
-  else if (!op.compare("lb")) ret = COMPILE_I(0x20);  // lb
-  else if (!op.compare("sw")) ret = COMPILE_I(0x2b);  // sw
-  else if (!op.compare("sh")) ret = COMPILE_I(0x29);  // sh
-  else if (!op.compare("sb")) ret = COMPILE_I(0x28);  // sb
-  else if (!op.compare("lui")) ret = COMPILE_I(0x0f);  // lui
+  else if (!op.compare("lw")) ret = encode_i(0x23, $r(3), $r(1), $r(2));
+  else if (!op.compare("lh")) ret = encode_i(0x21, $r(3), $r(1), $r(2));
+  else if (!op.compare("lb")) ret = encode_i(0x20, $r(3), $r(1), $r(2));
+  else if (!op.compare("sw")) ret = encode_i(0x2b, $r(3), $r(1), $r(2));
+  else if (!op.compare("sh")) ret = encode_i(0x29, $r(3), $r(1), $r(2));
+  else if (!op.compare("sb")) ret = encode_i(0x28, $r(3), $r(1), $r(2));
+  else if (!op.compare("lui")) ret = encode_i(0x0f, 0x00, $r(1), $r(2));
   // Logic
-  else if (!op.compare("and")) ret = COMPILE_R(0x00, 0x00, 0x24); // and
-  else if (!op.compare("andi")) ret = COMPILE_I(0x0c);  // andi
-  else if (!op.compare("or")) ret = COMPILE_R(0x00, 0x00, 0x25); // or
-  else if (!op.compare("ori")) ret = COMPILE_I(0x0d);  // ori
-  else if (!op.compare("xor")) ret = COMPILE_R(0x00, 0x00, 0x26); // xor
-  else if (!op.compare("nor")) ret = COMPILE_R(0x00, 0x00, 0x27); // nor
-  else if (!op.compare("slt")) ret = COMPILE_R(0x00, 0x00, 0x2a); // slt
-  else if (!op.compare("slti")) ret = COMPILE_I(0x0a);  // slti
+  else if (!op.compare("and")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x24);
+  else if (!op.compare("andi")) ret = encode_i(0x0c, $r(2), $r(1), $(3));
+  else if (!op.compare("or")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x25);
+  else if (!op.compare("ori")) ret = encode_i(0x0d, $r(2), $r(1), $(3));
+  else if (!op.compare("xor")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x26);
+  else if (!op.compare("nor")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x27);
+  else if (!op.compare("slt")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x2a);
+  else if (!op.compare("slti")) ret = encode_i(0x0a, $r(2), $r(1), $(3));
   // Shift
-  else if (!op.compare("sll")) ret = COMPILE_R(0x00, 0x00, 0x00); // sll
-  else if (!op.compare("srl")) ret = COMPILE_R(0x00, 0x00, 0x02); // srl
-  else if (!op.compare("sra")) ret = COMPILE_R(0x00, 0x00, 0x03); // sra
+  else if (!op.compare("sll")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x00);
+  else if (!op.compare("srl")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x02);
+  else if (!op.compare("sra")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x03);
   // Jump
-  else if (!op.compare("beq")) ret = COMPILE_I(0x04);  // beq
-  else if (!op.compare("bne")) ret = COMPILE_I(0x05);  // bne
-  else if (!op.compare("j")) ret = COMPILE_J(0x02);  // j
-  else if (!op.compare("jr")) ret = COMPILE_R(0x00, 0x00, 0x08); // jr
-  else if (!op.compare("jal")) ret = COMPILE_J(0x03);  // jal
+  else if (!op.compare("beq")) ret = encode_i(0x04, $r(1), $r(2), $(3));
+  else if (!op.compare("bne")) ret = encode_i(0x05, $r(1), $r(2), $(3));
+  else if (!op.compare("j")) ret = encode_j(0x02, $(1));
+  else if (!op.compare("jr")) ret = encode_r(0x00, $r(1), 0x00, 0x00, 0x00, 0x08);
+  else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
   // Others
   else {std::cerr << "Unknown instruction: " << inst << std::endl; exit(1);}
 
