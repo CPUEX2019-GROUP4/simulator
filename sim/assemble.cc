@@ -111,6 +111,8 @@ uint32_t assemble(std::string inst)
   else if (!op.compare("sh")) ret = encode_i(0x29, $r(3), $r(1), $r(2));
   else if (!op.compare("sb")) ret = encode_i(0x28, $r(3), $r(1), $r(2));
   else if (!op.compare("lui")) ret = encode_i(0x0f, 0x00, $r(1), $r(2));
+  else if (!op.compare("mfhi")) ret = encode_r(0x00, 0x00, 0x00, $r(1), 0x00, 0x10);
+  else if (!op.compare("mflo")) ret = encode_r(0x00, 0x00, 0x00, $r(1), 0x00, 0x12);
   // Logic
   else if (!op.compare("and")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x24);
   else if (!op.compare("andi")) ret = encode_i(0x0c, $r(2), $r(1), $(3));
@@ -124,6 +126,7 @@ uint32_t assemble(std::string inst)
   else if (!op.compare("sll")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x00);
   else if (!op.compare("srl")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x02);
   else if (!op.compare("sra")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x03);
+  else if (!op.compare("sllv")) ret = encode_r(0x00, $r(3), $r(2), $r(1), 0x00, 0x04);
   // Jump
   else if (!op.compare("beq")) ret = encode_i(0x04, $r(1), $r(2), $(3));
   else if (!op.compare("bne")) ret = encode_i(0x05, $r(1), $r(2), $(3));
