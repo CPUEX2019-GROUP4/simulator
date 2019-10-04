@@ -45,8 +45,10 @@ int32_t LO, HI;               // special registers
 std::array<char, SIZE_MEM> mem;           // memory
 
 // Meta variables
-std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
-std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
+//std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
+//std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
+std::vector<int> regs_to_show;    // 表示させるレジスタたち
+std::vector<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 int total_inst = 0;
 
 /** show help */
@@ -65,16 +67,16 @@ void show_help(void)
 /**--- print registers ---*/
 void print_regs(void)
 {
-  for (auto it = regs_to_show.begin(); it != regs_to_show.end(); it++) {
-    printf("R%d: %d ", *it, int_reg[*it]);
+  int count = 0;
+  for (auto it : regs_to_show) {
+    if (it == -1) printf("\t%d: LO: %d\n", ++count, LO); // XXX: LO/HI は-1,-2で表現(zako-coder)
+    else if (it == -2) printf("\t%d: HI: %d\n", ++count, HI);
+    else printf("\t%d: r%d: %d\n", ++count, it, int_reg[it]);
   }
   //putchar('\n');
-  for (auto it = fregs_to_show.begin(); it != regs_to_show.end(); it++) {
-    printf("F%d: %f ", *it, float_reg[*it]);
+  for (auto it : fregs_to_show) {
+    printf("\t%d f%d: %f\n",  ++count, it, float_reg[it]);
   }
-  //putchar('\n');
-  // special registers
-  printf("LO: %d, HI: %d\n", LO, HI);
 }
 
 /**--- strcpy()のnull文字付加なしver ---*/
@@ -120,6 +122,7 @@ enum Comm exec_inst(void)
     printf("pc out of index. abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
+  printf("%d: ", pc);
   return exec_inst(inst_reg[pc]);
 }
 
@@ -304,15 +307,25 @@ enum Comm read_commands(void)
   }
   else if (comm == "print" || comm == "p") {
     if (v[1] == "") {
-      printf("USAGE: print {{{register name}}\n");
+      printf("USAGE: print [r0-r15/f0-f15/LO/HI]\n");
+    }
+    else if(!v[1].compare("LO")) {
+      regs_to_show.push_back(-1);
+      //regs_to_show.emplace(-1);
+    }
+    else if(!v[1].compare("HI")) {
+      regs_to_show.push_back(-2);
+      //regs_to_show.emplace(-2);
     }
     else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
       int no = std::stoi(v[1].substr(1));
-      regs_to_show.emplace(no);
+      regs_to_show.push_back(no);
+      //regs_to_show.emplace(no);
     }
     else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
       int no = std::stoi(v[1].substr(1));
-      fregs_to_show.emplace(no);
+      fregs_to_show.push_back(no);
+      //fregs_to_show.emplace(no);
     }
     return PRINT;
   }
