@@ -20,13 +20,6 @@ uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
 uint32_t encode_i(int opcode, int rs, int rt, int imm);
 uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
 uint32_t assemble(std::string inst);
-void print_assemble(std::string inst, uint32_t enc);
-
-
-void print_assemble(std::string inst, uint32_t enc)
-{
-  std::cout << inst << " --> " << enc << std::endl;
-}
 
 uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func)
 {
@@ -81,19 +74,10 @@ uint32_t encode_j(int opcode, int addr)
 }
 
 /** 1命令をstringで受け取り、その機械語を吐く */
-uint32_t assemble(std::string inst)
+uint32_t assemble(std::vector<std::string> v)
 {
   uint32_t ret;
 
-  // split input string by ' ' and save them to a vector v
-  std::vector<std::string> v;
-  std::stringstream ss{inst};
-  std::string buf;
-  while (std::getline(ss, buf, ' ')) {
-    if (buf.compare("")) v.push_back(buf); // XXX: really whitespace as separator?
-  }
-
-  if (v.empty()) {printf("empty"); exit(1); /*return -1;*/} // empty. (unexpected)
 
   std::string op = v[0];
 
@@ -136,9 +120,7 @@ uint32_t assemble(std::string inst)
   // Others
   else if (!op.compare("nop")) ret = encode_r(0x09, 0x00, 0x00, 0x00, 0x00, 0x00); // NOP
 
-  else {std::cerr << "Unknown instruction: " << inst << std::endl; exit(1);}
-
-  print_assemble(inst, ret);
+  else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
 
   return ret;
 }
@@ -174,7 +156,23 @@ int main(int argc, char **argv)
   while (!ifs.eof()) {
     getline(ifs, inst);
     if (!inst.compare("")) break;
-    uint32_t ret = assemble(inst);
+
+    // split input string by ' ' and save them to a vector v
+    std::vector<std::string> v;
+    std::stringstream ss{inst};
+    std::string buf;
+    while (std::getline(ss, buf, ' ')) {
+      if (!buf.compare("")) continue;
+      v.push_back(buf);
+    }
+    if (!v[0].compare(0, 1, "#")) continue;   // lines which start with '#' are comments
+
+    std::cout << inst << " --> ";
+
+    uint32_t ret = assemble(v);
+
+    std::cout << ret << std::endl;
+
     ofs.write((char*)(&ret), 4);
   }
 

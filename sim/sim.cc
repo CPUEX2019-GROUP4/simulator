@@ -69,13 +69,13 @@ void print_regs(void)
 {
   int count = 0;
   for (auto it : regs_to_show) {
-    if (it == -1) printf("\t%d: LO: %d\n", ++count, LO); // XXX: LO/HI は-1,-2で表現(zako-coder)
-    else if (it == -2) printf("\t%d: HI: %d\n", ++count, HI);
-    else printf("\t%d: r%d: %d\n", ++count, it, int_reg[it]);
+    if (it == -1) printf("\t%d: LO = %d\n", ++count, LO); // XXX: LO/HI は-1,-2で表現(zako-coder)
+    else if (it == -2) printf("\t%d: HI = %d\n", ++count, HI);
+    else printf("\t%d: r%d = %d\n", ++count, it, int_reg[it]);
   }
   //putchar('\n');
   for (auto it : fregs_to_show) {
-    printf("\t%d f%d: %f\n",  ++count, it, float_reg[it]);
+    printf("\t%d f%d = %f\n",  ++count, it, float_reg[it]);
   }
 }
 
