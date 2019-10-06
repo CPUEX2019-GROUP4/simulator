@@ -85,6 +85,7 @@ uint32_t assemble(std::vector<std::string> v)
   if (!op.compare("add")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x20);
   else if (!op.compare("sub")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x22);
   else if (!op.compare("addi")) ret = encode_i(0x08, $r(2), $r(1), $(3));
+  else if (!op.compare("subi")) ret = encode_i(0x18, $r(2), $r(1), $(3)); // subi
   else if (!op.compare("mult")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x18);
   else if (!op.compare("div")) ret = encode_r(0x00, $r(1), $r(2), 0x00, 0x00, 0x1a);
   // Load/Store
@@ -118,7 +119,7 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("jr")) ret = encode_r(0x00, $r(1), 0x00, 0x00, 0x00, 0x08);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
   // Others
-  else if (!op.compare("nop")) ret = encode_r(0x09, 0x00, 0x00, 0x00, 0x00, 0x00); // NOP
+  else if (!op.compare("nop")) ret = encode_r(0x09, 0x00, 0x00, 0x00, 0x00, 0x00); // nop
 
   else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
 
