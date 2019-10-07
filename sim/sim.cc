@@ -47,8 +47,6 @@ int32_t LO, HI;               // special registers
 std::array<char, SIZE_MEM> mem;           // memory
 
 // Meta variables
-//std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
-//std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 std::vector<int> regs_to_show;    // 表示させるレジスタたち
 std::vector<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 uint32_t total_inst = 0;
@@ -85,12 +83,9 @@ void print_regs(void)
   int count = 0;
   for (auto it : regs_to_show) {
     if (it == dest_reg) printf("\x1b[1m");
-    if (it == -1) printf("\t%d: LO = %d\n", ++count, LO); // XXX: LO/HI は-1,-2で表現(zako-coder)
-    else if (it == -2) printf("\t%d: HI = %d\n", ++count, HI);
     else printf("\t%d: r%d = %d\n", ++count, it, int_reg[it]);
     if (it == dest_reg) printf("\x1b[0m");
   }
-  //putchar('\n');
   for (auto it : fregs_to_show) {
     printf("\t%d f%d = %f\n",  ++count, it, float_reg[it]);
   }
@@ -154,27 +149,27 @@ enum Comm exec_inst(uint32_t inst)
     case 0x00:      /* R type */
       switch (get_func(inst)) {
         case 0x20:      // add
-          printf("add r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a + $b;
           pc++; break;
         case 0x22:      // sub
-          printf("sub r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a - $b;
           pc++; break;
         case 0x25:      // or
-          printf("or r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a | $b;
           pc++; break;
         case 0x2a:      // slt
-          printf("slt r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = ($a < $b)? 1: 0;
           pc++; break;
         case 0x04:      // sllv
-          printf("sllv r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a << $b;
           pc++; break;
         case 0x00:      // sll
-          printf("sll r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
+          printf("sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
           $d = $a << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
@@ -193,57 +188,55 @@ enum Comm exec_inst(uint32_t inst)
       }
       break;
     case 0x08:      // addi
-      printf("addi r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = $a + get_imm_signed(inst);
       pc++; break;
     case 0x18:      // subi
-      printf("subi r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = $a - get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
-      printf("lw r%d, %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      //copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
+      printf("lw r%d %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
       reset_bold();
-      printf("sw r%d, %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      //copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
+      printf("sw r%d %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
       pc++; break;
     case 0x0f:      // lui
-      printf("lui r%d, %d\n", get_rd(inst), get_imm(inst));
+      printf("lui r%d %d\n", get_rd(inst), get_imm(inst));
       $d = get_imm(inst) << 16;
       pc++; break;
     case 0x0d:      // ori
-      printf("ori r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      printf("ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       $d = $a | get_imm(inst);
       pc++; break;
     case 0x0a:      // slti
-      printf("slti r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = ($a < get_imm_signed(inst))? 1: 0;  // XXX: 符号拡張されている?
       pc++; break;
     case 0x04:      // beq
       reset_bold();
-      printf("beq r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($d == $a) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x05:      // bne
       reset_bold();
-      printf("bne r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      /*
+      printf("bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($d != $a) pc += 1 + get_imm_signed(inst);
       else pc++;
-      */
       break;
     case 0x02:      // j
       reset_bold();
       printf("j %d\n", get_addr(inst));
-      //pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+      pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x03:      // jal
       reset_bold();
       printf("jal %d\n", get_addr(inst));
-      int_reg[31] = pc + 2;
+      int_reg[31] = pc + 1;
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     default:
@@ -287,23 +280,13 @@ enum Comm read_commands(void)
     if (v[1] == "") {
       printf("USAGE: print [r0-r15/f0-f15/LO/HI]\n");
     }
-    else if(!v[1].compare("LO")) {
-      regs_to_show.push_back(-1);
-      //regs_to_show.emplace(-1);
-    }
-    else if(!v[1].compare("HI")) {
-      regs_to_show.push_back(-2);
-      //regs_to_show.emplace(-2);
-    }
     else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
       int no = std::stoi(v[1].substr(1));
       regs_to_show.push_back(no);
-      //regs_to_show.emplace(no);
     }
     else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
       int no = std::stoi(v[1].substr(1));
       fregs_to_show.push_back(no);
-      //fregs_to_show.emplace(no);
     }
     return PRINT;
   }
@@ -336,14 +319,9 @@ int main(int argc, char **argv)
 
   init_inst(argv[1]);
 
-  //show_help();
-  //putchar('\n');
+  show_help();
+  putchar('\n');
 
-  while(1) {
-    exec_inst();
-  }
-
-  /*
   while (1) {
     enum Comm comm = read_commands();
     if (comm == NIL) break;
@@ -353,7 +331,6 @@ int main(int argc, char **argv)
     print_regs();
     reset_bold();
   }
-  */
   //test();
 
   puts("\nsimulator terminated");
