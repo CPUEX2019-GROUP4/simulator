@@ -83,7 +83,7 @@ void print_regs(void)
   int count = 0;
   for (auto it : regs_to_show) {
     if (it == dest_reg) printf("\x1b[1m");
-    else printf("\t%d: r%d = %d\n", ++count, it, int_reg[it]);
+    printf("\t%d: r%d = %d\n", ++count, it, int_reg[it]);
     if (it == dest_reg) printf("\x1b[0m");
   }
   for (auto it : fregs_to_show) {
