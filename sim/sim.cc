@@ -1,5 +1,6 @@
 /** 機械語ファイルをコマンドライン入力で受け取り、ステップ実行結果を表示する。
  *  Big Endianの機械語を想定(たぶん).
+ *  Program Counter はuint32_t で定義しているためpc+=4 はpc++になる。
  **/
 
 #include <cstdio>
@@ -19,13 +20,13 @@
 
 #define DELAY_SLOT 4
 
-#define $s (int_reg[get_rs(inst)])
-#define $t (int_reg[get_rt(inst)])
 #define $d (int_reg[get_rd(inst)])
+#define $a (int_reg[get_ra(inst)])
+#define $b (int_reg[get_rb(inst)])
 
 enum Comm {STEP, PRINT, BREAK, HELP, NIL, ERR, NOP, OP};
 
-// Parameters
+// Parametera
 const char PROMPT[] = "(ryo) ";
 constexpr int auto_display_registers = 0;
 
@@ -39,7 +40,7 @@ enum Comm read_commands(void);
 
 // registers
 uint32_t *inst_reg;           // instruction register
-int pc = 0;                   // program counter
+uint32_t pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
 int32_t LO, HI;               // special registers
@@ -50,7 +51,7 @@ std::array<char, SIZE_MEM> mem;           // memory
 //std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 std::vector<int> regs_to_show;    // 表示させるレジスタたち
 std::vector<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
-int total_inst = 0;
+uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
 
 /** for register display */
@@ -94,7 +95,6 @@ void print_regs(void)
     printf("\t%d f%d = %f\n",  ++count, it, float_reg[it]);
   }
 }
-
 /**--- strcpy()のnull文字付加なしver ---*/
 int copy(char *dst, char *src, int n)
 {
@@ -122,20 +122,21 @@ void init_inst(char *pathname)
 }
 
 uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
-uint32_t get_rs(uint32_t inst) {return (inst >> 21) & 0x1f;}
-uint32_t get_rt(uint32_t inst) {return (inst >> 16) & 0x1f;}
-uint32_t get_rd(uint32_t inst) {return (inst >> 11) & 0x1f;}
+uint32_t get_rd(uint32_t inst) {return (inst >> 21) & 0x1f;}
+uint32_t get_ra(uint32_t inst) {return (inst >> 16) & 0x1f;}
+uint32_t get_rb(uint32_t inst) {return (inst >> 11) & 0x1f;}
 uint32_t get_shift(uint32_t inst) {return (inst >> 6) & 0x1f;}
-uint32_t get_funct(uint32_t inst) {return (inst >> 0) & 0x3f;}
-uint32_t get_imm(uint32_t inst) {return (inst >> 0) & 0x0fff;}
-int32_t get_imm_signed(uint32_t inst) {return (inst >> 0) & 0x0fff;}     // signed
+int32_t get_shift_signed(uint32_t inst) {return (inst & 0x3ff) - (inst & 0x400);}
+uint32_t get_func(uint32_t inst) {return (inst >> 0) & 0x3f;}
+uint32_t get_imm(uint32_t inst) {return (inst >> 0) & 0xffff;}
+int32_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);}
 uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 
 /** execute single instruction */
 enum Comm exec_inst(void)
 {
   if (!(0 <= pc && pc < total_inst)) {
-    printf("pc out of index. abort. %d of %d\n", pc, total_inst);
+    printf("pc out of index. aborb. %d of %d\n", pc, total_inst);
     exit(1);
   }
   printf("%d: ", pc);
@@ -145,173 +146,106 @@ enum Comm exec_inst(void)
 /** execute single instruction */
 enum Comm exec_inst(uint32_t inst)
 {
+  if (inst == 0) {printf("nop\n"); return NOP;}   // nop
+
+  set_bold(get_rd(inst));
+
   switch (get_opcode(inst)) {
-    case 0x09:
-      printf("nop\n");
-      return NOP;   // nop
-    case 0x00:
-      switch (get_funct(inst)) {
-        case 0x00:  // sll
-          printf("sll r%d, r%d, %d\n", get_rd(inst), get_rt(inst), get_imm(inst));
-          set_bold(get_rd(inst));
-          $d = $t << get_imm(inst);
+    case 0x00:      /* R type */
+      switch (get_func(inst)) {
+        case 0x20:      // add
+          printf("add r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $d = $a + $b;
           pc++; break;
-        case 0x02:  // srl
-          set_bold(get_rd(inst));
-          printf("srl r%d, r%d, %d\n", get_rd(inst), get_rt(inst), get_imm(inst));
-          $d = $t >> get_imm(inst); //XXX check if 0 is extended
+        case 0x22:      // sub
+          printf("sub r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $d = $a - $b;
           pc++; break;
-        case 0x03:  // sra
-          set_bold(get_rd(inst));
-          printf("sra r%d, r%d, %d\n", get_rd(inst), get_rt(inst), get_imm(inst));
-          $d = $t >> get_imm(inst); //XXX check if sign is extended
+        case 0x25:      // or
+          printf("or r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $d = $a | $b;
           pc++; break;
-        case 0x04:  // sllv
-          set_bold(get_rd(inst));
-          printf("sllv r%d, r%d, r%d\n", get_rd(inst), get_rt(inst), get_rs(inst));
-          $d = $t << $s;
+        case 0x2a:      // slt
+          printf("slt r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $d = ($a < $b)? 1: 0;
           pc++; break;
-        case 0x1a:  // div
-          set_bold(-1);
-          printf("div r%d, r%d\n", get_rs(inst), get_rt(inst));
-          LO = $s / $t;
-          HI = $s % $t;
+        case 0x04:      // sllv
+          printf("sllv r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $d = $a << $b;
           pc++; break;
-        case 0x1b:  // divu
-          set_bold(-1);
-          printf("divu r%d, r%d\n", get_rs(inst), get_rt(inst));
-          LO = (unsigned)$s / (unsigned)$t;
-          HI = (unsigned)$s % (unsigned)$t;
+        case 0x00:      // sll
+          printf("sll r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
+          $d = $a << get_shift(inst);
           pc++; break;
-        case 0x08:  // jr
-          printf("jr r%d\n", get_rs(inst));
-          pc = $s;
+        case 0x08:      // jr
+          reset_bold();
+          printf("jr r%d\n", get_rd(inst));
+          pc = $d;
           break;
-        case 0x10:  // mfhi
-          set_bold(get_rd(inst));
-          printf("mfhi r%d\n", get_rd(inst));
-          $d = HI;
-          pc++; break;
-        case 0x12:  // mflo
-          set_bold(get_rd(inst));
-          printf("mflo r%d\n", get_rd(inst));
-          $d = LO;
-          pc++; break;
-        case 0x20:  // add
-          set_bold(get_rd(inst));
-          printf("add r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = $s + $t;
-          pc++; break;
-        case 0x22:  // sub
-          set_bold(get_rd(inst));
-          printf("sub r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = $s - $t;
-          pc++; break;
-        case 0x24:  // and
-          set_bold(get_rd(inst));
-          printf("and r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = $s & $t;
-          pc++; break;
-        case 0x25:  // or
-          set_bold(get_rd(inst));
-          printf("or r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = $s | $t;
-          pc++; break;
-        case 0x26:  // xor
-          set_bold(get_rd(inst));
-          printf("xor r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = $s ^ $t;
-          pc++; break;
-        case 0x27:  // nor
-          set_bold(get_rd(inst));
-          printf("nor r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = ~($s | $t);
-          pc++; break;
-        case 0x2a:  // slt
-          set_bold(get_rd(inst));
-          printf("slt r%d, r%d, r%d\n", get_rd(inst), get_rs(inst), get_rt(inst));
-          $d = ($s < $t)? 1: 0;
-          pc++; break;
         default:
-          fprintf(stderr, "Unknown funct: %d\n", get_funct(inst));
+          reset_bold();
+          printf("Unknown funct: 0x%x.\n", get_func(inst));
+          printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
+                 get_opcode(inst), get_rd(inst), get_ra(inst), get_rb(inst),
+                 get_shift(inst), get_func(inst));
+          puts("Abort.");
           exit(1);
       }
       break;
-    case 0x0a:      // slti
-      set_bold(get_rd(inst));
-      printf("slti r%d, r%d, %d\n", get_rt(inst), get_rs(inst), get_imm(inst));
-      $t = ($s < get_imm_signed(inst))? 1: 0;  // XXX: 符号拡張されている?
+    case 0x08:      // addi
+      printf("addi r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      $d = $a + get_imm_signed(inst);
       pc++; break;
-    case 0x0c:      // andi
-      set_bold(get_rd(inst));
-      printf("andi r%d, r%d, %d\n", get_rt(inst), get_rs(inst), get_imm(inst));
-      $t = $s & get_imm(inst);
+    case 0x18:      // subi
+      printf("subi r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      $d = $a - get_imm_signed(inst);
       pc++; break;
-    case 0x0d:      // ori
-      set_bold(get_rd(inst));
-      printf("ori r%d, r%d, %d\n", get_rt(inst), get_rs(inst), get_imm(inst));
-      $t = $s | get_imm_signed(inst);    // XXX: Cが符号拡張されているかcheck
-      pc++; break;
-    case 0x0f:      // lui
-      set_bold(get_rt(inst));
-      printf("lui r%d, %d\n", get_rt(inst), get_imm(inst));
-      $t = get_imm(inst) << 16;
-      pc++; break;
-    case 0x02:      // j
-      printf("j %d\n", get_addr(inst));
-      pc = get_addr(inst);
-      break;
     case 0x23:      // lw
-      set_bold(get_rt(inst));
-      printf("lw r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
-      copy((char*)(&($t)), &mem[$s + get_imm_signed(inst)], 4);
-      pc++; break;
-    case 0x21:      // lh
-      set_bold(get_rt(inst));
-      printf("lh r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
-      copy((char*)(&($t)), &mem[$s + get_imm_signed(inst)], 2);  // XXX: 符号拡張されているかcheck
-      pc++; break;
-    case 0x20:      // lb
-      set_bold(get_rt(inst));
-      printf("lb r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
-      copy((char*)(&($t)), &mem[$s + get_imm_signed(inst)], 1);  // XXX: 符号拡張されているかcheck
+      printf("lw r%d, %d(r%d)\n", get_rd(inst), get_imm_signed(inst), get_ra(inst));
+      copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
-      set_bold(get_rt(inst));
-      printf("sw r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
-      copy(&mem[$s + get_imm_signed(inst)], (char*)(&($t)), 4);
+      reset_bold();
+      printf("sw r%d, %d(r%d)\n", get_rd(inst), get_imm_signed(inst), get_ra(inst));
+      copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
       pc++; break;
-    case 0x29:      // sh
-      set_bold(get_rt(inst));
-      printf("sh r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
-      copy(&mem[$s + get_imm(inst)], (char*)(&($t)), 2);  // XXX: 符号拡張されているかcheck
+    case 0x0f:      // lui
+      printf("lui r%d, %d\n", get_rd(inst), get_imm(inst));
+      $d = get_imm(inst) << 16;
       pc++; break;
-    case 0x28:      // sb
-      set_bold(get_rt(inst));
-      printf("sb r%d, %d(r%d)\n", get_rt(inst), get_imm(inst), get_rs(inst));
-      copy(&mem[$s + get_imm(inst)], (char*)(&($t)), 1);  // XXX: 符号拡張されているかcheck
+    case 0x0d:      // ori
+      printf("ori r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      $d = $a | get_imm(inst);
       pc++; break;
-    case 0x03:      // jal
-      printf("jal %d\n", get_imm(inst));
-      int_reg[31] = pc + 1;   // XXX: 遅延スロットを使うなら+2にする
-      pc += ((int_reg[DELAY_SLOT] >> 28) & 0x1f) | get_addr(inst);
-      break;
-    case 0x04:      // beq
-      printf("beq r%d, r%d, %d\n", get_rs(inst), get_rt(inst), get_imm(inst));
-      if ($s == $t) pc += 1 + get_imm(inst);
+    case 0x0a:      // slti
+      printf("slti r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      $d = ($a < get_imm_signed(inst))? 1: 0;  // XXX: 符号拡張されている?
+      pc++; break;
+    case 0x01:      // beq
+      reset_bold();
+      printf("beq r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if ($d == $a) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x05:      // bne
-      printf("bne r%d, r%d, %d\n", get_rs(inst), get_rt(inst), get_imm(inst));
-      if ($s != $t) pc += 1 + get_imm(inst);
+      reset_bold();
+      printf("bne r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if ($d != $a) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
-    case 0x08:      // addi
-      set_bold(get_rt(inst));
-      printf("addi r%d, r%d, %d\n", get_rt(inst), get_rs(inst), get_imm(inst));
-      $t = $s + get_imm(inst);
-      pc++; break;
+    case 0x02:      // j
+      reset_bold();
+      printf("j %d\n", get_addr(inst));
+      pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+      break;
+    case 0x03:      // jal
+      reset_bold();
+      printf("jal %d\n", get_addr(inst));
+      int_reg[31] = pc + 2;
+      pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+      break;
     default:
+      reset_bold();
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
       exit(1);
   }
@@ -382,6 +316,13 @@ enum Comm read_commands(void)
 
   printf("something unexpexted has happend\n");
   return ERR;
+}
+
+void test(void)
+{
+  uint32_t inst = 2351300604;
+  printf("%d\n", get_imm_signed(inst));
+  printf("%d\n", get_imm(inst));
 }
 
 int main(int argc, char **argv)

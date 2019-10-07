@@ -15,45 +15,35 @@
 #define $(i) (std::stoi(v[i]))
 #define $r(i) (std::stoi(v[i].substr(1)))
 
-// Prototypes
-uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
-uint32_t encode_i(int opcode, int rs, int rt, int imm);
-uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func);
-uint32_t assemble(std::string inst);
-
-uint32_t encode_r(int opcode, int rs, int rt, int rd, int shift, int func)
+uint32_t encode_r(int func, int rd, int ra, int rb)
 {
-  //printf("opcode: %d, rd: %d, rs: %d, rt: %d, shift: %d, func: %d\n", opcode,
-  //       rd, rs, rt, shift, func);
+  //printf("opcode: %d, rd: %d, ra: %d, rb: %d, shift: %d, func: %d\n", opcode,
+  //       rd, ra, rb, shift, func);
   uint32_t ret = 0;
 
-  if (opcode >= 64) {std::cerr << "opcode (" << opcode  << ") >= 64\n";exit(1);}
-  else ret |= (opcode & 0x3f) << 26;
-  if (rs >= 32) {std::cerr << "rs (" << rs << ") >= 32\n";exit(1);}
-  else ret |= (rs & 0x1f) << 21;
-  if (rt >= 32) {std::cerr << "rt (" << rt << ") >= 32\n";exit(1);}
-  else ret |= (rt & 0x1f) << 16;
   if (rd >= 32) {std::cerr << "rd (" << rd << ") >= 32\n";exit(1);}
-  else ret |= (rd & 0x1f) << 11;
-  if (shift >= 32) {std::cerr << "shift (" << shift << ") >= 32\n";exit(1);}
-  else ret |= (shift & 0x1f) << 6;
+  else ret |= (rd & 0x1f) << 21;
+  if (ra >= 32) {std::cerr << "ra (" << ra << ") >= 32\n";exit(1);}
+  else ret |= (ra & 0x1f) << 16;
+  if (rb >= 32) {std::cerr << "rb (" << rb << ") >= 32\n";exit(1);}
+  else ret |= (rb & 0x1f) << 11;
   if (func >= 64) {std::cerr << "func (" << func << ") >= 64\n";exit(1);}
-  else ret |= (func & 0x3f);
+  else ret |= func & 0x3f;
 
   return ret;
 }
 
-uint32_t encode_i(int opcode, int rs, int rt, int imm)
+uint32_t encode_i(int opcode, int rd, int ra, int imm)
 {
-  //printf("opcode: %d, rt: %d, imm: %d, rs: %d\n", opcode, rt, imm, rs);
+  //printf("opcode: %d, rb: %d, imm: %d, ra: %d\n", opcode, rb, imm, ra);
   uint32_t ret = 0;
 
   if (opcode >= 64) {std::cerr << "opcode (" << opcode  << ") >= 64\n";exit(1);}
   else ret |= (opcode & 0x3f) << 26;
-  if (rs >= 32) {std::cerr << "rs (" << rs << ") >= 32\n";exit(1);}
-  else ret |= (rs & 0x1f) << 21;
-  if (rt >= 32) {std::cerr << "rt (" << rt << ") >= 32\n";exit(1);}
-  else ret |= (rt & 0x1f) << 16;
+  if (rd >= 32) {std::cerr << "rd (" << rd << ") >= 32\n";exit(1);}
+  else ret |= (rd & 0x1f) << 21;
+  if (ra >= 32) {std::cerr << "ra (" << ra << ") >= 32\n";exit(1);}
+  else ret |= (ra & 0x1f) << 16;
   if (imm >= 65536) {std::cerr << "immediate (" << imm << ") >= 65536\n";exit(1);}
   else ret |= (imm & 0xffff);
 
@@ -82,46 +72,32 @@ uint32_t assemble(std::vector<std::string> v)
   std::string op = v[0];
 
   // Arithmetic
-  if (!op.compare("add")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x20);
-  else if (!op.compare("sub")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x22);
-  else if (!op.compare("addi")) ret = encode_i(0x08, $r(2), $r(1), $(3));
-  else if (!op.compare("subi")) ret = encode_i(0x18, $r(2), $r(1), $(3)); // subi
-  else if (!op.compare("mult")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x18);
-  else if (!op.compare("div")) ret = encode_r(0x00, $r(1), $r(2), 0x00, 0x00, 0x1a);
+  if (!op.compare("add")) ret = encode_r(0x20, $r(1), $r(2), $r(3));
+  else if (!op.compare("sub")) ret = encode_r(0x22, $r(1), $r(2), $r(3));
+  else if (!op.compare("addi")) ret = encode_i(0x08, $r(1), $r(2), $(3));
+  else if (!op.compare("subi")) ret = encode_i(0x18, $r(1), $r(2), $(3)); // subi
   // Load/Store
-  else if (!op.compare("lw")) ret = encode_i(0x23, $r(3), $r(1), $r(2));
-  else if (!op.compare("lh")) ret = encode_i(0x21, $r(3), $r(1), $r(2));
-  else if (!op.compare("lb")) ret = encode_i(0x20, $r(3), $r(1), $r(2));
-  else if (!op.compare("sw")) ret = encode_i(0x2b, $r(3), $r(1), $r(2));
-  else if (!op.compare("sh")) ret = encode_i(0x29, $r(3), $r(1), $r(2));
-  else if (!op.compare("sb")) ret = encode_i(0x28, $r(3), $r(1), $r(2));
-  else if (!op.compare("lui")) ret = encode_i(0x0f, 0x00, $r(1), $r(2));
-  else if (!op.compare("mfhi")) ret = encode_r(0x00, 0x00, 0x00, $r(1), 0x00, 0x10);
-  else if (!op.compare("mflo")) ret = encode_r(0x00, 0x00, 0x00, $r(1), 0x00, 0x12);
+  else if (!op.compare("lw")) ret = encode_i(0x23, $r(1), $r(2), $(3));
+  else if (!op.compare("sw")) ret = encode_i(0x2b, $r(1), $r(2), $(3));
+  else if (!op.compare("lui")) ret = encode_i(0x0f, $r(1), 0x00, $r(2));
   // Logic
-  else if (!op.compare("and")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x24);
-  else if (!op.compare("andi")) ret = encode_i(0x0c, $r(2), $r(1), $(3));
-  else if (!op.compare("or")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x25);
-  else if (!op.compare("ori")) ret = encode_i(0x0d, $r(2), $r(1), $(3));
-  else if (!op.compare("xor")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x26);
-  else if (!op.compare("nor")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x27);
-  else if (!op.compare("slt")) ret = encode_r(0x00, $r(2), $r(3), $r(1), 0x00, 0x2a);
-  else if (!op.compare("slti")) ret = encode_i(0x0a, $r(2), $r(1), $(3));
+  else if (!op.compare("or")) ret = encode_r(0x25, $r(1), $r(2), $r(3));
+  else if (!op.compare("ori")) ret = encode_i(0x0d, $r(1), $r(2), $(3));
+  else if (!op.compare("slt")) ret = encode_r(0x2a, $r(1), $r(2), $r(3));
+  else if (!op.compare("slti")) ret = encode_i(0x0a, $r(1), $r(2), $(3));
   // Shift
-  else if (!op.compare("sll")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x00);
-  else if (!op.compare("srl")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x02);
-  else if (!op.compare("sra")) ret = encode_r(0x00, 0x00, $r(2), $r(1), $(3), 0x03);
-  else if (!op.compare("sllv")) ret = encode_r(0x00, $r(3), $r(2), $r(1), 0x00, 0x04);
+  else if (!op.compare("sll")) ret = encode_r(0x00, $r(1), $r(2), $(3));
+  else if (!op.compare("sllv")) ret = encode_r(0x04, $r(1), $r(2), $r(3));
   // Jump
   else if (!op.compare("beq")) ret = encode_i(0x04, $r(1), $r(2), $(3));
   else if (!op.compare("bne")) ret = encode_i(0x05, $r(1), $r(2), $(3));
   else if (!op.compare("j")) ret = encode_j(0x02, $(1));
-  else if (!op.compare("jr")) ret = encode_r(0x00, $r(1), 0x00, 0x00, 0x00, 0x08);
+  else if (!op.compare("jr")) ret = encode_r(0x08, $r(1), 0x00, 0x00);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
   // Others
-  else if (!op.compare("nop")) ret = encode_r(0x09, 0x00, 0x00, 0x00, 0x00, 0x00); // nop
+  else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00); // nop
 
-  else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
+  else {std::cerr << "\033[1m Unknown instruction. Aborb.\033[m" << /*inst <<*/ std::endl; exit(1);}
 
   return ret;
 }
@@ -166,7 +142,7 @@ int main(int argc, char **argv)
       if (!buf.compare("")) continue;
       v.push_back(buf);
     }
-    if (!v[0].compare(0, 1, "#")) continue;   // lines which start with '#' are comments
+    if (!v[0].compare(0, 1, "#")) continue;   // lines which starb with '#' are comments
 
     std::cout << inst << " --> ";
 

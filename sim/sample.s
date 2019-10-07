@@ -1,21 +1,21 @@
   addi r1 r0 1
   addi r5 r0 100
-  sw r1 124 r5
+  sw r1 r5 124
   addi r5 r5 128
-  lw r1 -4 r5
+  lw r1 r5 -4
   slti r2 r1 2
   bne r2 r0 13
   addi r1 r1 -1
-  sw r1 124 r5
+  sw r1 r5 124
   addi r5 r5 128
   jal 4
-  sw r1 -8 r5
-  lw r1 -4 r5
+  sw r1 r5 -8
+  lw r1 r5 -4
   addi r1 r1 -2
-  sw r1 124 r5
+  sw r1 r5 124
   addi r5 r5 128
   jal 4
-  lw r2 -8 r5
+  lw r2 r5 -8
   add r1 r1 r2
   j 21
   addi r1 r0 1
