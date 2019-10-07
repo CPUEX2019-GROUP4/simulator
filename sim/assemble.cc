@@ -15,7 +15,7 @@
 #define $(i) (std::stoi(v[i]))
 #define $r(i) (std::stoi(v[i].substr(1)))
 
-uint32_t encode_r(int func, int rd, int ra, int rb)
+uint32_t encode_r(int func, int rd, int ra, int rb, int shift)
 {
   //printf("opcode: %d, rd: %d, ra: %d, rb: %d, shift: %d, func: %d\n", opcode,
   //       rd, ra, rb, shift, func);
@@ -27,6 +27,8 @@ uint32_t encode_r(int func, int rd, int ra, int rb)
   else ret |= (ra & 0x1f) << 16;
   if (rb >= 32) {std::cerr << "rb (" << rb << ") >= 32\n";exit(1);}
   else ret |= (rb & 0x1f) << 11;
+  if (shift >= 32) {std::cerr << "shift (" << shift << ") >= 32\n";exit(1);}
+  else ret |= (shift & 0x1f) << 6;
   if (func >= 64) {std::cerr << "func (" << func << ") >= 64\n";exit(1);}
   else ret |= func & 0x3f;
 
@@ -72,30 +74,30 @@ uint32_t assemble(std::vector<std::string> v)
   std::string op = v[0];
 
   // Arithmetic
-  if (!op.compare("add")) ret = encode_r(0x20, $r(1), $r(2), $r(3));
-  else if (!op.compare("sub")) ret = encode_r(0x22, $r(1), $r(2), $r(3));
+  if (!op.compare("add")) ret = encode_r(0x20, $r(1), $r(2), $r(3), 0x00);
+  else if (!op.compare("sub")) ret = encode_r(0x22, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("addi")) ret = encode_i(0x08, $r(1), $r(2), $(3));
   else if (!op.compare("subi")) ret = encode_i(0x18, $r(1), $r(2), $(3)); // subi
   // Load/Store
   else if (!op.compare("lw")) ret = encode_i(0x23, $r(1), $r(2), $(3));
   else if (!op.compare("sw")) ret = encode_i(0x2b, $r(1), $r(2), $(3));
-  else if (!op.compare("lui")) ret = encode_i(0x0f, $r(1), 0x00, $r(2));
+  else if (!op.compare("lui")) ret = encode_i(0x0f, $r(1), 0x00, $(2));
   // Logic
-  else if (!op.compare("or")) ret = encode_r(0x25, $r(1), $r(2), $r(3));
+  else if (!op.compare("or")) ret = encode_r(0x25, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("ori")) ret = encode_i(0x0d, $r(1), $r(2), $(3));
-  else if (!op.compare("slt")) ret = encode_r(0x2a, $r(1), $r(2), $r(3));
+  else if (!op.compare("slt")) ret = encode_r(0x2a, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("slti")) ret = encode_i(0x0a, $r(1), $r(2), $(3));
   // Shift
-  else if (!op.compare("sll")) ret = encode_r(0x00, $r(1), $r(2), $(3));
-  else if (!op.compare("sllv")) ret = encode_r(0x04, $r(1), $r(2), $r(3));
+  else if (!op.compare("sll")) ret = encode_r(0x00, $r(1), $r(2), 0x00, $(3));
+  else if (!op.compare("sllv")) ret = encode_r(0x04, $r(1), $r(2), $r(3), 0x00);
   // Jump
   else if (!op.compare("beq")) ret = encode_i(0x04, $r(1), $r(2), $(3));
   else if (!op.compare("bne")) ret = encode_i(0x05, $r(1), $r(2), $(3));
   else if (!op.compare("j")) ret = encode_j(0x02, $(1));
-  else if (!op.compare("jr")) ret = encode_r(0x08, $r(1), 0x00, 0x00);
+  else if (!op.compare("jr")) ret = encode_r(0x08, $r(1), 0x00, 0x00, 0x00);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
   // Others
-  else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00); // nop
+  else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00); // nop
 
   else {std::cerr << "\033[1m Unknown instruction. Aborb.\033[m" << /*inst <<*/ std::endl; exit(1);}
 

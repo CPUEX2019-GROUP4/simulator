@@ -114,7 +114,7 @@ void init_inst(char *pathname)
   inst_reg = (uint32_t*) malloc(LEN_INSTRUCTION * 4);  // 4 bytes per instruction
   if (inst_reg == NULL) {perror("malloc"); exit(1);}
   total_inst = fread(inst_reg, 1, LEN_INSTRUCTION, fin) / 4;
-  printf("loaded %d instructions.\n", total_inst);
+  //printf("loaded %d instructions.\n", total_inst);
 
   if (fclose(fin)) {perror("fclose"); exit(1);}
 
@@ -136,10 +136,10 @@ uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 enum Comm exec_inst(void)
 {
   if (!(0 <= pc && pc < total_inst)) {
-    printf("pc out of index. aborb. %d of %d\n", pc, total_inst);
+    //printf("pc out of index. abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
-  printf("%d: ", pc);
+  //printf("%d: ", pc);
   return exec_inst(inst_reg[pc]);
 }
 
@@ -154,33 +154,34 @@ enum Comm exec_inst(uint32_t inst)
     case 0x00:      /* R type */
       switch (get_func(inst)) {
         case 0x20:      // add
-          printf("add r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a + $b;
           pc++; break;
         case 0x22:      // sub
-          printf("sub r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a - $b;
           pc++; break;
         case 0x25:      // or
-          printf("or r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a | $b;
           pc++; break;
         case 0x2a:      // slt
-          printf("slt r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = ($a < $b)? 1: 0;
           pc++; break;
         case 0x04:      // sllv
-          printf("sllv r%d, r%d, r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          printf("sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a << $b;
           pc++; break;
         case 0x00:      // sll
-          printf("sll r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
+          printf("sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
           $d = $a << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
           reset_bold();
           printf("jr r%d\n", get_rd(inst));
-          pc = $d;
+          //pc = $d;
+          pc++; break;
           break;
         default:
           reset_bold();
@@ -193,58 +194,62 @@ enum Comm exec_inst(uint32_t inst)
       }
       break;
     case 0x08:      // addi
-      printf("addi r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = $a + get_imm_signed(inst);
       pc++; break;
     case 0x18:      // subi
-      printf("subi r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = $a - get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
-      printf("lw r%d, %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       //copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
       reset_bold();
-      printf("sw r%d, %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       //copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
       pc++; break;
     case 0x0f:      // lui
-      printf("lui r%d, %d\n", get_rd(inst), get_imm(inst));
+      printf("lui: %d\n", inst);
+      printf("lui r%d %d\n", get_rd(inst), get_imm(inst));
       $d = get_imm(inst) << 16;
       pc++; break;
     case 0x0d:      // ori
-      printf("ori r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      printf("ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       $d = $a | get_imm(inst);
       pc++; break;
     case 0x0a:      // slti
-      printf("slti r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = ($a < get_imm_signed(inst))? 1: 0;  // XXX: 符号拡張されている?
       pc++; break;
     case 0x04:      // beq
       reset_bold();
-      printf("beq r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      if ($d == $a) pc += 1 + get_imm_signed(inst);
-      else pc++;
+      printf("beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      //if ($d == $a) pc += 1 + get_imm_signed(inst);
+      //else pc++;
+      pc++;
       break;
     case 0x05:      // bne
       reset_bold();
-      printf("bne r%d, r%d, %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       /*
       if ($d != $a) pc += 1 + get_imm_signed(inst);
       else pc++;
       */
+      pc++;
       break;
     case 0x02:      // j
       reset_bold();
       printf("j %d\n", get_addr(inst));
       //pc = ((pc+1) & 0xf0000000) | get_addr(inst);
-      break;
+      pc++; break;
     case 0x03:      // jal
       reset_bold();
       printf("jal %d\n", get_addr(inst));
       int_reg[31] = pc + 2;
-      pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+      //pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+      pc++; break;
       break;
     default:
       reset_bold();
