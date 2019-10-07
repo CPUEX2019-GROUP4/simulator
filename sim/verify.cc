@@ -1,6 +1,5 @@
 /** 機械語ファイルをコマンドライン入力で受け取り、ステップ実行結果を表示する。
  *  Big Endianの機械語を想定(たぶん).
- *  Program Counter はuint32_t で定義しているためpc+=4 はpc++になる。
  **/
 
 #include <cstdio>
