@@ -24,7 +24,7 @@
 #define $a (int_reg[get_ra(inst)])
 #define $b (int_reg[get_rb(inst)])
 
-enum Comm {STEP, PRINT, BREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
+enum Comm {STEP, PRINT, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
 
 // Parameters
 const char PROMPT[] = "(ryo) ";
@@ -43,7 +43,6 @@ uint32_t *inst_reg;           // instruction register
 uint32_t pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
-int32_t LO, HI;               // special registers
 std::array<char, SIZE_MEM> mem;           // memory
 
 // Meta variables
@@ -52,7 +51,14 @@ std::vector<int> fregs_to_show;   // (浮動小数)表示させるレジスタ�
 uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
+std::unordered_map<int,int> rev_ninsts;  // ↑の逆
 std::unordered_map<std::string,int> labels;  // ラベルに対するソースコード行番号のmap
+int breakpoint;                   // breakpointの命令番号
+
+void init(void)
+{
+  breakpoint = -1;
+}
 
 void init_labels(char *path)
 {
@@ -80,6 +86,7 @@ void init_ninsts(char *path)
     ifs >> inst >> line;
     //std::cout << inst << " " << line << std::endl;
     ninsts.emplace(std::make_pair(inst, line));
+    rev_ninsts.emplace(std::make_pair(line, inst));
   }
   //puts("done ninsts");
 }
@@ -101,12 +108,14 @@ void show_help(void)
 {
   puts("available commands.");
   puts("-------------------");
-  printf("step (s): \t\texecute the current instruction of the binary.\n");
-  printf("print (p) {{rn}}: \tadd the register to reserved list to show.\n"
-         "                  \tE.g. `p r0`, `p f2`, `p LO`.\n");
-  printf("break (b): \t\tnot implemented yet.\n");
-  printf("run (r): \t\truns the program until it reaches NOP\n");
-	printf("exit/quit \t\tterminate the simulator\n");
+  printf("step (s): \t\t\texecute the current instruction of the binary.\n");
+  printf("print (p) {{rn}}: \t\tadd the register to reserved list to show.\n"
+         "                  \t\tE.g. `p r0`, `p f2`.\n");
+  printf("break (b) {{line/label}}: \tset a brakepoint at the line/label.\n"
+         "                          \tvalid until you put `ub`.\n");
+  printf("unbreak (ub): \t\t\treset the breakpoint.\n");
+  printf("run (r): \t\t\truns the program until it reaches NOP\n");
+	printf("exit/quit \t\t\tterminate the simulator\n");
   puts("-------------------");
 }
 
@@ -168,7 +177,7 @@ enum Comm exec_inst(void)
     exit(1);
   }
   //printf("%d: ", pc);
-  printf("%d: ", ninsts[pc]);
+  printf("%d: ", ninsts.at(pc));
   return exec_inst(inst_reg[pc]);
 }
 
@@ -299,17 +308,24 @@ enum Comm analyze_commands(std::string s)
 
   std::string comm = v[0];
 
-  if (comm == "break" || comm == "b") {
+  if (comm == "break" || comm == "b") {   // breakpoint
     if (v[1] == "") {
-      printf("USAGE: break {{{line}}\n");
+      printf("USAGE: break {{{line/label}}\n");
     }
-    else ;  // XXX: set a breakpoint
+    else {
+      try {breakpoint = rev_ninsts.at(std::stoi(v[1]));}
+      catch (...) {
+        try {breakpoint = labels.at(v[1]);} catch(...) {std::cerr << "Unknown label.\n"; return NIL;}
+      }
+      printf("breakpoint: %d\n", breakpoint);
+    }
     return BREAK;
   }
+  else if (comm == "unbreak" || comm == "ub") return UNBREAK;  // unbreak;
   else if (comm == "step" || comm == "s") { // step実行
     return STEP;
   }
-  else if (comm == "print" || comm == "p") {
+  else if (comm == "print" || comm == "p") {  // print
     if (v[1] == "") {
       printf("USAGE: print [r0-r15/f0-f15/LO/HI]\n");
     }
@@ -323,11 +339,11 @@ enum Comm analyze_commands(std::string s)
     }
     return PRINT;
   }
-  else if (comm == "help" || comm == "h") {
+  else if (comm == "help" || comm == "h") {   // help
     show_help();
     return HELP;
   }
-  else if (comm == "run" || comm == "r") {
+  else if (comm == "run" || comm == "r") {    // run
     return RUN;
   }
   else {
@@ -353,6 +369,8 @@ int main(int argc, char **argv)
     exit(1);
   }
 
+  init();
+
   init_inst(argv[1]);
   init_labels(argv[2]);
   init_ninsts(argv[3]);
@@ -372,8 +390,11 @@ int main(int argc, char **argv)
     else if (comm == RUN) {
       while (1) {
         if (exec_inst() == NOP) break;
+        if (breakpoint < 0) continue;
+        else if (pc == (unsigned)breakpoint) break;
       }
     }
+    else if (comm == UNBREAK) {breakpoint = -1; continue;}
     else ;  //XXX: 今はここでやることがない
     print_regs();
     reset_bold();
