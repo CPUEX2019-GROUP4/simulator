@@ -21,21 +21,24 @@ def gather(f):
         l += 1
     return mappings, labels
 
+def label_to_nlin(labels, label):
+    for (l, line) in labels:
+        if label in l:
+            return line
+    return -1
+
+def nlin_to_ninst(mappings, i):
+    for (nlin, inst) in mappings:
+        if i == nlin:
+            return inst
+    return -1
+
+def label_to_ninst(labels, mappings, label):
+    return nlin_to_ninst(mappings, 1 + label_to_nlin(labels, label))
+
 def subst_labels(mappings, labels, f):
     # returns the substituted list of instructions
     # 対象はj/jal/beq/bne
-
-    def g(label):
-        for (l,ll) in labels:
-            if label in l:
-                for (lll, i) in mappings:
-                    if ll == lll-1:
-                        return i
-        return -1
-    def nlin_to_ninst(i):
-        for (nlin, inst) in mappings:
-            if i == nlin:
-                return inst
     ret = []
     l = 0
     for line in f:
@@ -44,17 +47,30 @@ def subst_labels(mappings, labels, f):
             continue
         #print(line)
         if line.strip().startswith('jal '):
-            n = g(line.strip()[4:])
+            n = label_to_ninst(labels, mappings, line.strip()[4:])
             line = 'jal ' + str(n) + '\n'
         elif line.strip().startswith('j '):
-            n = g(line.strip()[2:])
+            n = label_to_ninst(labels, mappings, line.strip()[2:])
             line = 'j ' + str(n) + '\n'
         elif line.strip().startswith('bne ') or line.strip().startswith('beq '):
             v = line.strip().split(' ')
-            n = g(v[-1]) - nlin_to_ninst(l)
+            n = label_to_ninst(labels, mappings, v[-1]) - nlin_to_ninst(mappings, l)
             line = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + str(n) + '\n'
         ret.append(line)
     return ret
+
+def write_labels(path, labels, mappings):
+    with open(path, "w") as f:
+        buf = []
+        for label,_ in labels:
+            buf.append(label + ' ' + str(label_to_ninst(labels, mappings, label)) + '\n')
+        f.writelines(buf)
+    return buf
+
+def write_ninsts(path, mappings):
+    with open(path, "w") as f:
+        buf = [str(ninst) + ' ' +  str(nlin) + '\n' for (nlin,ninst) in mappings]
+        f.writelines(buf)
 
 path = 'foo.s'
 out = 'piyo.s'
@@ -71,3 +87,5 @@ if __name__ == '__main__':
         ret = subst_labels(mappings, labels, f)
         with open(out, "w") as writer:
             writer.writelines(ret)
+    write_labels('label.txt', labels, mappings)
+    write_ninsts('inst.txt', mappings)

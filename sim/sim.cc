@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <fstream>
 
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 10000
@@ -23,11 +24,11 @@
 #define $a (int_reg[get_ra(inst)])
 #define $b (int_reg[get_rb(inst)])
 
-enum Comm {STEP, PRINT, BREAK, HELP, NIL, ERR, NOP, OP};
+enum Comm {STEP, PRINT, BREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
 
-// Parametera
+// Parameters
 const char PROMPT[] = "(ryo) ";
-constexpr int auto_display_registers = 0;
+int auto_display_registers = 0;
 
 // Prototypes
 void show_help(void);
@@ -35,7 +36,7 @@ void print_regs(void);
 void init_inst(char *pathname);
 enum Comm exec_inst(uint32_t);
 enum Comm exec_inst(void);
-enum Comm read_commands(void);
+enum Comm analyze_commands(std::string);
 
 // registers
 uint32_t *inst_reg;           // instruction register
@@ -50,6 +51,38 @@ std::vector<int> regs_to_show;    // 表示させるレジスタたち
 std::vector<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
+std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
+std::unordered_map<std::string,int> labels;  // ラベルに対するソースコード行番号のmap
+
+void init_labels(char *path)
+{
+  std::string label;
+  int line = 0;
+  std::ifstream ifs(path);
+  if (ifs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
+  //puts("start labels");
+  while (!ifs.eof()) {
+    ifs >> label >> line;
+    //std::cout << label << " " << line << std::endl;
+    labels.emplace(std::make_pair(label, line));
+  }
+  //puts("done labels");
+}
+
+void init_ninsts(char *path)
+{
+  int inst = 0;
+  int line = 0;
+  std::ifstream ifs(path);
+  if (ifs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
+  //puts("start ninsts");
+  while (!ifs.eof()) {
+    ifs >> inst >> line;
+    //std::cout << inst << " " << line << std::endl;
+    ninsts.emplace(std::make_pair(inst, line));
+  }
+  //puts("done ninsts");
+}
 
 /** for register display */
 void set_bold(int i)
@@ -72,6 +105,7 @@ void show_help(void)
   printf("print (p) {{rn}}: \tadd the register to reserved list to show.\n"
          "                  \tE.g. `p r0`, `p f2`, `p LO`.\n");
   printf("break (b): \t\tnot implemented yet.\n");
+  printf("run (r): \t\truns the program until it reaches NOP\n");
 	printf("exit/quit \t\tterminate the simulator\n");
   puts("-------------------");
 }
@@ -133,7 +167,8 @@ enum Comm exec_inst(void)
     printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
-  printf("%d: ", pc);
+  //printf("%d: ", pc);
+  printf("%d: ", ninsts[pc]);
   return exec_inst(inst_reg[pc]);
 }
 
@@ -246,22 +281,21 @@ enum Comm exec_inst(uint32_t inst)
   return OP;
 }
 
-/**--- read commands from stdin ---*/
-enum Comm read_commands(void)
+/**--- analyze commands obtained from stdin ---*/
+enum Comm analyze_commands(std::string s)
 {
-  printf("%s", PROMPT);
-
   std::vector<std::string> v;
-  std::string s;
-
-  std::getline(std::cin, s);  // input
 
   // split input string by ' ' and save them to a vector v
   std::stringstream ss{s};
   std::string buf;
   while (std::getline(ss, buf, ' ')) v.push_back(buf);
 
-  if (!s.compare("") || !s.compare("exit") || !s.compare("quit")) return NIL;
+  if (!s.compare("")) {
+    std::cin.clear();
+    return NIL;
+  }
+  if (!s.compare("exit") || !s.compare("quit")) return QUIT;
 
   std::string comm = v[0];
 
@@ -293,6 +327,9 @@ enum Comm read_commands(void)
     show_help();
     return HELP;
   }
+  else if (comm == "run" || comm == "r") {
+    return RUN;
+  }
   else {
     std::cerr << "Unknown command: " << s << std::endl;
     return ERR;
@@ -311,26 +348,32 @@ void test(void)
 
 int main(int argc, char **argv)
 {
-  if (argc != 2) {
-    printf("USAGE: %s {{filename}}\n", argv[0]);
+  if (argc != 4) {
+    printf("USAGE: %s {{binary}} {{labels}} {{insts}}\n", argv[0]);
     exit(1);
   }
 
   init_inst(argv[1]);
+  init_labels(argv[2]);
+  init_ninsts(argv[3]);
 
   show_help();
   putchar('\n');
 
+  std::string s;
   while (1) {
-    int ret = exec_inst();
-    if (ret == NOP) break;
-  }
-
-  while (1) {
-    enum Comm comm = read_commands();
-    if (comm == NIL) break;
+    printf("%s", PROMPT);
+    if (!std::getline(std::cin, s)) break;
+    enum Comm comm = analyze_commands(s);
+    if (comm == NIL) continue;
+    else if (comm == QUIT) break;
     else if (comm == ERR) continue;
     else if (comm == STEP) exec_inst();
+    else if (comm == RUN) {
+      while (1) {
+        if (exec_inst() == NOP) break;
+      }
+    }
     else ;  //XXX: 今はここでやることがない
     print_regs();
     reset_bold();
