@@ -195,12 +195,12 @@ enum Comm exec_inst(uint32_t inst)
       $d = $a - get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
-      printf("lw r%d %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
       reset_bold();
-      printf("sw r%d %d r%d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      printf("sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
       pc++; break;
     case 0x0f:      // lui
@@ -320,6 +320,11 @@ int main(int argc, char **argv)
 
   show_help();
   putchar('\n');
+
+  while (1) {
+    int ret = exec_inst();
+    if (ret == NOP) break;
+  }
 
   while (1) {
     enum Comm comm = read_commands();

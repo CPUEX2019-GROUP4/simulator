@@ -51,7 +51,7 @@ def subst_labels(mappings, labels, f):
             line = 'j ' + str(n) + '\n'
         elif line.strip().startswith('bne ') or line.strip().startswith('beq '):
             v = line.strip().split(' ')
-            n = g(v[-1]) - nlin_to_ninst(l) - 1
+            n = g(v[-1]) - nlin_to_ninst(l)
             line = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + str(n) + '\n'
         ret.append(line)
     return ret
