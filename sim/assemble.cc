@@ -99,7 +99,7 @@ uint32_t assemble(std::vector<std::string> v)
   // Others
   else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00); // nop
 
-  else {std::cerr << "\033[1m Unknown instruction. Aborb.\033[m" << /*inst <<*/ std::endl; exit(1);}
+  else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
 
   return ret;
 }

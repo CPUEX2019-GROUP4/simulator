@@ -1,2 +1,2 @@
 #!/bin/sh
-make && ./assemble sample.s && ./sim a.out
+make && python preassemble.py && ./assemble piyo.s && ./sim a.out
