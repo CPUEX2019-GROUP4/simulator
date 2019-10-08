@@ -2,6 +2,8 @@
  *  Big Endianの機械語を想定(たぶん).
  **/
 
+#define TEST_FLAG 0
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -17,8 +19,6 @@
 #define LEN_INSTRUCTION 10000
 #define N_REG 32
 #define SIZE_MEM 4096
-
-#define DELAY_SLOT 4
 
 #define $d (int_reg[get_rd(inst)])
 #define $a (int_reg[get_ra(inst)])
@@ -198,8 +198,7 @@ enum Comm exec_inst(void)
     printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
-  //printf("%d: ", pc);
-  printf("%d: ", ninsts.at(pc));
+  //printf("%d: ", ninsts.at(pc));
   return exec_inst(inst_reg[pc]);
 }
 
@@ -210,36 +209,38 @@ enum Comm exec_inst(uint32_t inst)
 
   set_bold(get_rd(inst));
 
+  char s[256];
+
   switch (get_opcode(inst)) {
     case 0x00:      /* R type */
       switch (get_func(inst)) {
         case 0x20:      // add
-          printf("add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          sprintf(s, "add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a + $b;
           pc++; break;
         case 0x22:      // sub
-          printf("sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          sprintf(s, "sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a - $b;
           pc++; break;
         case 0x25:      // or
-          printf("or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          sprintf(s, "or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a | $b;
           pc++; break;
         case 0x2a:      // slt
-          printf("slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          sprintf(s, "slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = ($a < $b)? 1: 0;
           pc++; break;
         case 0x04:      // sllv
-          printf("sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          sprintf(s, "sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $d = $a << $b;
           pc++; break;
         case 0x00:      // sll
-          printf("sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
+          sprintf(s, "sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
           $d = $a << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
           reset_bold();
-          printf("jr r%d\n", get_rd(inst));
+          sprintf(s, "jr r%d\n", get_rd(inst));
           pc = $d;
           break;
         default:
@@ -253,54 +254,54 @@ enum Comm exec_inst(uint32_t inst)
       }
       break;
     case 0x08:      // addi
-      printf("addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = $a + get_imm_signed(inst);
       pc++; break;
     case 0x18:      // subi
-      printf("subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = $a - get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
-      printf("lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
       reset_bold();
-      printf("sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
       pc++; break;
     case 0x0f:      // lui
-      printf("lui r%d %d\n", get_rd(inst), get_imm(inst));
+      sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
       $d = get_imm(inst) << 16;
       pc++; break;
     case 0x0d:      // ori
-      printf("ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       $d = $a | get_imm(inst);
       pc++; break;
     case 0x0a:      // slti
-      printf("slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $d = ($a < get_imm_signed(inst))? 1: 0;
       pc++; break;
     case 0x04:      // beq
       reset_bold();
-      printf("beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($d == $a) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x05:      // bne
       reset_bold();
-      printf("bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      sprintf(s, "bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($d != $a) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x02:      // j
       reset_bold();
-      printf("j %d\n", get_addr(inst));
+      sprintf(s, "j %d\n", get_addr(inst));
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x03:      // jal
       reset_bold();
-      printf("jal %d\n", get_addr(inst));
+      sprintf(s, "jal %d\n", get_addr(inst));
       int_reg[31] = pc + 1;
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
@@ -309,6 +310,7 @@ enum Comm exec_inst(uint32_t inst)
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
       exit(1);
   }
+  //printf(s);
   return OP;
 }
 
@@ -410,6 +412,8 @@ void test(void)
   while (1) {
     if (exec_inst() == NOP) break;
   }
+  analyze_commands(std::string("p r2"));
+  print_regs();
 }
 
 int main(int argc, char **argv)
@@ -428,29 +432,31 @@ int main(int argc, char **argv)
   show_help();
   putchar('\n');
 
-  std::string s;
-  while (1) {
-    printf("%s", PROMPT);
-    if (!std::getline(std::cin, s)) break;
-    enum Comm comm = analyze_commands(s);
-    if (comm == NIL) continue;
-    else if (comm == QUIT) break;
-    else if (comm == ERR) continue;
-    else if (comm == STEP) exec_inst();
-    else if (comm == RUN) {
-      while (1) {
-        if (monitor()) break;
-        if (exec_inst() == NOP) break;
-        if (breakpoint < 0) continue;
-        else if (pc == (unsigned)breakpoint) break;
+  if (TEST_FLAG) test();
+  else {
+    std::string s;
+    while (1) {
+      printf("%s", PROMPT);
+      if (!std::getline(std::cin, s)) break;
+      enum Comm comm = analyze_commands(s);
+      if (comm == NIL) continue;
+      else if (comm == QUIT) break;
+      else if (comm == ERR) continue;
+      else if (comm == STEP) exec_inst();
+      else if (comm == RUN) {
+        while (1) {
+          if (monitor()) break;
+          if (exec_inst() == NOP) break;
+          if (breakpoint < 0) continue;
+          else if (pc == (unsigned)breakpoint) break;
+        }
       }
+      else if (comm == UNBREAK) {breakpoint = -1; continue;}
+      else ;
+      print_regs();
+      reset_bold();
     }
-    else if (comm == UNBREAK) {breakpoint = -1; continue;}
-    else ;
-    print_regs();
-    reset_bold();
   }
-  //test();
 
   puts("\nsimulator terminated");
 
