@@ -8,9 +8,10 @@
 def gather(f):
     mappings = []  # list of (行番号, 命令番号)
     labels = []    # list of (ラベル, 行番号)
-    l = 1  # line number
+    l = 0  # line number
     i = 0  # inst numbe
     for line in f:
+        l += 1
         if line[0] == '#':
             continue
         elif line.endswith(":\n"):
@@ -18,7 +19,6 @@ def gather(f):
         else:
             mappings.append((l, i))
             i += 1
-        l += 1
     return mappings, labels
 
 def label_to_nlin(labels, label):
@@ -54,7 +54,7 @@ def subst_labels(mappings, labels, f):
             line = 'j ' + str(n) + '\n'
         elif line.strip().startswith('bne ') or line.strip().startswith('beq '):
             v = line.strip().split(' ')
-            n = label_to_ninst(labels, mappings, v[-1]) - nlin_to_ninst(mappings, l)
+            n = label_to_ninst(labels, mappings, v[-1]) - nlin_to_ninst(mappings, l) - 1
             line = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + str(n) + '\n'
         ret.append(line)
     return ret
