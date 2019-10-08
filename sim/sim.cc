@@ -1,6 +1,5 @@
 /** 機械語ファイルをコマンドライン入力で受け取り、ステップ実行結果を表示する。
  *  Big Endianの機械語を想定(たぶん).
- *  Program Counter はuint32_t で定義しているためpc+=4 はpc++になる。
  **/
 
 #include <cstdio>
@@ -131,7 +130,7 @@ uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 enum Comm exec_inst(void)
 {
   if (!(0 <= pc && pc < total_inst)) {
-    printf("pc out of index. aborb. %d of %d\n", pc, total_inst);
+    printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
   printf("%d: ", pc);
@@ -214,7 +213,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++; break;
     case 0x0a:      // slti
       printf("slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      $d = ($a < get_imm_signed(inst))? 1: 0;  // XXX: 符号拡張されている?
+      $d = ($a < get_imm_signed(inst))? 1: 0;
       pc++; break;
     case 0x04:      // beq
       reset_bold();

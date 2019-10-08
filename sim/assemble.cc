@@ -126,6 +126,7 @@ int main(int argc, char **argv)
     ofs.open("a.out", std::ios::out|std::ios::binary|std::ios::trunc);
   }
 
+  puts(" -------------------------------");
 
   if (ifs.fail()) {std::cerr << "failed to open " << argv[1] << "\n"; exit(1);}
   if (ofs.fail()) {std::cerr << "failed to open " << argv[2] << "\n"; exit(1);}
@@ -146,7 +147,7 @@ int main(int argc, char **argv)
     }
     if (!v[0].compare(0, 1, "#")) continue;   // lines which starb with '#' are comments
 
-    std::cout << inst << " --> ";
+    std::cout << "  | " << inst << " --> ";
 
     uint32_t ret = assemble(v);
 
@@ -158,6 +159,7 @@ int main(int argc, char **argv)
   ifs.close();
   ofs.close();
 
+  puts(" -------------------------------");
   printf("Assembled successfully.\n");
 
   return 0;
