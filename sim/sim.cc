@@ -24,7 +24,7 @@
 #define $a (int_reg[get_ra(inst)])
 #define $b (int_reg[get_rb(inst)])
 
-enum Comm {STEP, PRINT, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
+enum Comm {STEP, PRINT, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
 
 // Parameters
 const char PROMPT[] = "(ryo) ";
@@ -54,10 +54,13 @@ std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコー�
 std::unordered_map<int,int> rev_ninsts;  // ↑の逆
 std::unordered_map<std::string,int> labels;  // ラベルに対するソースコード行番号のmap
 int breakpoint;                   // breakpointの命令番号
+std::unordered_map<int,int> regs_to_monitor;    // モニターするレジスタたち
+std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
 
 void init(void)
 {
   breakpoint = -1;
+  dest_reg = -1;
 }
 
 void init_labels(char *path)
@@ -109,6 +112,8 @@ void show_help(void)
   puts("available commands.");
   puts("-------------------");
   printf("step (s): \t\t\texecute the current instruction of the binary.\n");
+  printf("monitor (m) {{rn}}: \t\tstop when the value of the register changes.\n");
+  printf("unmonitor (um) {{rn}}: \t\tremove the register from monitoring list.\n");
   printf("print (p) {{rn}}: \t\tadd the register to reserved list to show.\n"
          "                  \t\tE.g. `p r0`, `p f2`.\n");
   printf("break (b) {{line/label}}: \tset a brakepoint at the line/label.\n"
@@ -117,6 +122,23 @@ void show_help(void)
   printf("run (r): \t\t\truns the program until it reaches NOP\n");
 	printf("exit/quit \t\t\tterminate the simulator\n");
   puts("-------------------");
+}
+
+int monitor(void)
+{
+  for (auto it = regs_to_monitor.begin(); it != regs_to_monitor.end(); it++) {
+    if (int_reg[it->first] != it->second) {
+      it->second = int_reg[it->first];
+      return 1;
+    }
+  }
+  for (auto it = fregs_to_monitor.begin(); it != fregs_to_monitor.end(); it++) {
+    if (float_reg[it->first] != it->second) {
+      it->second = float_reg[it->first];
+      return 1;
+    }
+  }
+  return 0;
 }
 
 /**--- print registers ---*/
@@ -321,13 +343,41 @@ enum Comm analyze_commands(std::string s)
     }
     return BREAK;
   }
-  else if (comm == "unbreak" || comm == "ub") return UNBREAK;  // unbreak;
+  else if (comm == "unbreak" || comm == "ub") return UNBREAK;  // unbreak
   else if (comm == "step" || comm == "s") { // step実行
     return STEP;
   }
+  else if (comm == "monitor" || comm == "m") {  // monitor
+    if (v[1] == "") {
+      printf("USAGE: monitor [r0-r15/f0-f15]\n");
+    }
+    else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
+      int no = std::stoi(v[1].substr(1));
+      regs_to_monitor.emplace(std::make_pair(no, int_reg[no]));
+    }
+    else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
+      int no = std::stoi(v[1].substr(1));
+      fregs_to_monitor.emplace(std::make_pair(no, float_reg[no]));
+    }
+    return MONITOR;
+  }
+  else if (comm == "unmonitor" || comm == "um") {
+    if (v[1] == "") {
+      printf("USAGE: unmonitor [r0-r15/f0-f15]\n");
+    }
+    else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
+      int no = std::stoi(v[1].substr(1));
+      regs_to_monitor.erase(no);
+    }
+    else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
+      int no = std::stoi(v[1].substr(1));
+      fregs_to_monitor.erase(no);
+    }
+    return UNMONITOR;  // unmonitor
+  }
   else if (comm == "print" || comm == "p") {  // print
     if (v[1] == "") {
-      printf("USAGE: print [r0-r15/f0-f15/LO/HI]\n");
+      printf("USAGE: print [r0-r15/f0-f15]\n");
     }
     else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
       int no = std::stoi(v[1].substr(1));
@@ -357,9 +407,9 @@ enum Comm analyze_commands(std::string s)
 
 void test(void)
 {
-  uint32_t inst = 2351300604;
-  printf("%d\n", get_imm_signed(inst));
-  printf("%d\n", get_imm(inst));
+  while (1) {
+    if (exec_inst() == NOP) break;
+  }
 }
 
 int main(int argc, char **argv)
@@ -389,13 +439,14 @@ int main(int argc, char **argv)
     else if (comm == STEP) exec_inst();
     else if (comm == RUN) {
       while (1) {
+        if (monitor()) break;
         if (exec_inst() == NOP) break;
         if (breakpoint < 0) continue;
         else if (pc == (unsigned)breakpoint) break;
       }
     }
     else if (comm == UNBREAK) {breakpoint = -1; continue;}
-    else ;  //XXX: 今はここでやることがない
+    else ;
     print_regs();
     reset_bold();
   }
