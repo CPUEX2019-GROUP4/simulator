@@ -69,13 +69,10 @@ void init_labels(char *path)
   int line = 0;
   std::ifstream ifs(path);
   if (ifs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
-  //puts("start labels");
   while (!ifs.eof()) {
     ifs >> label >> line;
-    //std::cout << label << " " << line << std::endl;
     labels.emplace(std::make_pair(label, line));
   }
-  //puts("done labels");
 }
 
 void init_ninsts(char *path)
@@ -84,14 +81,11 @@ void init_ninsts(char *path)
   int line = 0;
   std::ifstream ifs(path);
   if (ifs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
-  //puts("start ninsts");
   while (!ifs.eof()) {
     ifs >> inst >> line;
-    //std::cout << inst << " " << line << std::endl;
     ninsts.emplace(std::make_pair(inst, line));
     rev_ninsts.emplace(std::make_pair(line, inst));
   }
-  //puts("done ninsts");
 }
 
 /** for register display */
@@ -198,7 +192,7 @@ enum Comm exec_inst(void)
     printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
-  //printf("%d: ", ninsts.at(pc));
+  if (!TEST_FLAG) printf("%d: ", ninsts.at(pc));
   return exec_inst(inst_reg[pc]);
 }
 
@@ -310,7 +304,7 @@ enum Comm exec_inst(uint32_t inst)
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
       exit(1);
   }
-  //printf(s);
+  if (!TEST_FLAG) printf(s);
   return OP;
 }
 
