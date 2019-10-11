@@ -12,7 +12,7 @@ def gather(f):
     i = 0  # inst numbe
     for line in f:
         l += 1
-        if line[0] == '#':
+        if line.strip()[0] == '#':
             continue
         elif line.endswith(":\n"):
             labels.append((line[:-2], l))
@@ -56,6 +56,14 @@ def subst_labels(mappings, labels, f):
             v = line.strip().split(' ')
             n = label_to_ninst(labels, mappings, v[-1]) - nlin_to_ninst(mappings, l) - 1
             line = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + str(n) + '\n'
+        elif line.strip()[0] == '#':
+            line = line.strip() + '\n'
+        elif line.strip().startswith('mv'):
+            v = line.strip().split(' ')
+            line = 'or ' + v[1] + ' r0 ' + v[2] + '\n'
+        elif line.strip().startswith('subi'):
+            v = line.strip().split(' ')
+            line = 'addi ' + v[1] + ' ' + v[2] + ' -' + v[3] + '\n'
         ret.append(line)
     return ret
 

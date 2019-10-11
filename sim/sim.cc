@@ -1,7 +1,3 @@
-/** 機械語ファイルをコマンドライン入力で受け取り、ステップ実行結果を表示する。
- *  Big Endianの機械語を想定(たぶん).
- **/
-
 #define TEST_FLAG 0
 
 #include <cstdio>

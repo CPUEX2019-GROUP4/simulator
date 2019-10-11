@@ -1,4 +1,4 @@
-all: sim swap assemble verify
+all: sim swap assemble
 
 sim: sim.cc
 	g++ -Wall sim.cc -o sim
@@ -9,8 +9,5 @@ swap: swap.c
 assemble: assemble.cc
 	g++ -Wall assemble.cc -o assemble
 
-verify: verify.cc
-	g++ -Wall verify.cc -o verify
-
 clean:
-	rm sim swap assemble verify
+	rm sim swap assemble
