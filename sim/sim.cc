@@ -20,7 +20,7 @@
 #define $a (int_reg[get_ra(inst)])
 #define $b (int_reg[get_rb(inst)])
 
-enum Comm {STEP, PRINT, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
+enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
 
 // Parameters
 const char PROMPT[] = "(ryo) ";
@@ -331,7 +331,7 @@ enum Comm analyze_commands(std::string s)
       catch (...) {
         try {breakpoint = labels.at(v[1]);} catch(...) {std::cerr << "Unknown label.\n"; return NIL;}
       }
-      printf("breakpoint: %d\n", breakpoint);
+      printf("breakpoint: %dth instruction\n", breakpoint);
     }
     return BREAK;
   }
@@ -380,6 +380,32 @@ enum Comm analyze_commands(std::string s)
       fregs_to_show.push_back(no);
     }
     return PRINT;
+  }
+  else if (comm == "clear" || comm == "c") {  // clear
+    if (v.size() == 1) {
+      regs_to_show.clear();
+      fregs_to_show.clear();
+    }
+    /*
+    else {
+      for (int i=1; i<v.size; i++) {
+        if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
+          int no = std::stoi(v[1].substr(1));
+          //regs_to_show.erase(no);
+        }
+        else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
+          int no = std::stoi(v[1].substr(1));
+          //fregs_to_show.erase(no);
+        }
+        else {printf("USAGE: clear [r0-r15/f0-f15]\n"); return NIL;}
+      }
+    }
+    */
+    //else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
+    //  int no = std::stoi(v[1].substr(1));
+    //  fregs_to_show.push_back(no);
+    //}
+    return CLEAR;
   }
   else if (comm == "help" || comm == "h") {   // help
     show_help();
