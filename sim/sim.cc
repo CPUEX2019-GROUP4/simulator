@@ -23,7 +23,7 @@
 enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
 
 // Parameters
-const char PROMPT[] = "(ryo) ";
+const char PROMPT[] = ">> ";
 int auto_display_registers = 0;
 
 // Prototypes
@@ -42,8 +42,8 @@ float   float_reg[N_REG];     // float
 std::array<char, SIZE_MEM> mem;           // memory
 
 // Meta variables
-std::vector<int> regs_to_show;    // 表示させるレジスタたち
-std::vector<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
+std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
+std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
@@ -150,6 +150,35 @@ int copy(char *dst, char *src, int n)
   int i = 0;
   for (; i<n; i++) dst[i] = src[i];
   return i;
+}
+
+/**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
+std::vector<std::string> split(std::string s, std::string delimiter, bool shrink=true)
+{
+  std::vector<std::string> v;
+  std::string::size_type pos = 0;
+
+  if (!delimiter.compare("")) v.push_back(s);
+  else {
+    while (1) {
+      //std::cout << "outer " << pos << std::endl;
+      if (shrink) {
+        while (1) {
+          //std::cout << "inner " << pos << std::endl;
+          if (pos >= s.length()) break;
+          if (s.find(delimiter, pos) == pos) pos += delimiter.length();
+          else break;
+        }
+      }
+      if (pos >= s.length()) break;
+      std::string::size_type tmp = s.find(delimiter, pos);
+      //if (tmp == std::string::npos) break;
+      if (tmp == std::string::npos) {v.push_back(s.substr(pos, tmp-pos)); break;}
+      v.push_back(s.substr(pos, tmp-pos));
+      pos = tmp + delimiter.length();
+    }
+  }
+  return v;
 }
 
 /**--- read instructions from a file and save them to inst_reg ---*/
@@ -309,10 +338,9 @@ enum Comm analyze_commands(std::string s)
 {
   std::vector<std::string> v;
 
-  // split input string by ' ' and save them to a vector v
-  std::stringstream ss{s};
-  std::string buf;
-  while (std::getline(ss, buf, ' ')) v.push_back(buf);
+  v = split(s, " ");
+  for (auto it : v) std::cout << it << " ";
+  std::cout <<"done\n";
 
   if (!s.compare("")) {
     std::cin.clear();
@@ -368,16 +396,21 @@ enum Comm analyze_commands(std::string s)
     return UNMONITOR;  // unmonitor
   }
   else if (comm == "print" || comm == "p") {  // print
-    if (v[1] == "") {
+    if (v.size() == 1) {
       printf("USAGE: print [r0-r15/f0-f15]\n");
     }
-    else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
-      int no = std::stoi(v[1].substr(1));
-      regs_to_show.push_back(no);
-    }
-    else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
-      int no = std::stoi(v[1].substr(1));
-      fregs_to_show.push_back(no);
+    else {
+      for (unsigned int i=1; i<v.size(); i++) {
+        if (!v[i].compare(0, 1, "R") || !v[i].compare(0, 1, "r")) {
+          int no = std::stoi(v[i].substr(1));
+          regs_to_show.emplace(no);
+        }
+        else if (!v[i].compare(0, 1, "F") || !v[i].compare(0, 1, "f")) {
+          int no = std::stoi(v[i].substr(1));
+          fregs_to_show.emplace(no);
+        }
+        else {printf("USAGE: print [r0-r15/f0-f15]\n"); return NIL;}
+      }
     }
     return PRINT;
   }
@@ -386,25 +419,19 @@ enum Comm analyze_commands(std::string s)
       regs_to_show.clear();
       fregs_to_show.clear();
     }
-    /*
     else {
-      for (int i=1; i<v.size; i++) {
-        if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
-          int no = std::stoi(v[1].substr(1));
-          //regs_to_show.erase(no);
+      for (unsigned int i=1; i<v.size(); i++) {
+        if (!v[i].compare(0, 1, "R") || !v[i].compare(0, 1, "r")) {
+          int no = std::stoi(v[i].substr(1));
+          regs_to_show.erase(no);
         }
-        else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
-          int no = std::stoi(v[1].substr(1));
-          //fregs_to_show.erase(no);
+        else if (!v[i].compare(0, 1, "F") || !v[i].compare(0, 1, "f")) {
+          int no = std::stoi(v[i].substr(1));
+          fregs_to_show.erase(no);
         }
         else {printf("USAGE: clear [r0-r15/f0-f15]\n"); return NIL;}
       }
     }
-    */
-    //else if (!v[1].compare(0, 1, "F") || !v[1].compare(0, 1, "f")) {
-    //  int no = std::stoi(v[1].substr(1));
-    //  fregs_to_show.push_back(no);
-    //}
     return CLEAR;
   }
   else if (comm == "help" || comm == "h") {   // help

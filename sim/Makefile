@@ -1,13 +1,16 @@
+CC = g++
+LDFLAGS = -Wall -O2
+
 all: sim swap assemble
 
 sim: sim.cc
-	g++ -Wall sim.cc -o sim
+	$(CC) $(LDFLAGS) $< -o $@
 
 swap: swap.c
-	gcc -Wall swap.c -o swap
+	$(CC) $(LDFLAGS) $< -o $@
 
 assemble: assemble.cc
-	g++ -Wall assemble.cc -o assemble
+	$(CC) $(LDFLAGS) $< -o $@
 
 clean:
 	rm sim swap assemble
