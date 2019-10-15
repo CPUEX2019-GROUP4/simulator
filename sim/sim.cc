@@ -102,14 +102,21 @@ void show_help(void)
   puts("available commands.");
   puts("-------------------");
   printf("step (s): \t\t\texecute the current instruction of the binary.\n");
+  putchar('\n');
   printf("monitor (m) {{rn}}: \t\tstop when the value of the register changes.\n");
+  putchar('\n');
   printf("unmonitor (um) {{rn}}: \t\tremove the register from monitoring list.\n");
+  putchar('\n');
   printf("print (p) {{rn}}: \t\tadd the register to reserved list to show.\n"
          "                  \t\tE.g. `p r0`, `p f2`.\n");
+  printf("clear (c) {{rn}}: \t\tclear provided registers from display list.\n");
+  putchar('\n');
   printf("break (b) {{line/label}}: \tset a brakepoint at the line/label.\n"
          "                          \tvalid until you put `ub`.\n");
   printf("unbreak (ub): \t\t\treset the breakpoint.\n");
+  putchar('\n');
   printf("run (r): \t\t\truns the program until it reaches NOP\n");
+  putchar('\n');
 	printf("exit/quit \t\t\tterminate the simulator\n");
   puts("-------------------");
 }
@@ -339,8 +346,8 @@ enum Comm analyze_commands(std::string s)
   std::vector<std::string> v;
 
   v = split(s, " ");
-  for (auto it : v) std::cout << it << " ";
-  std::cout <<"done\n";
+  //for (auto it : v) std::cout << it << " ";
+  //std::cout <<"done\n";
 
   if (!s.compare("")) {
     std::cin.clear();
