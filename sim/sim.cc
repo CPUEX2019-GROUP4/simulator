@@ -16,9 +16,12 @@
 #define N_REG 32
 #define SIZE_MEM 4096
 
-#define $d (int_reg[get_rd(inst)])
-#define $a (int_reg[get_ra(inst)])
-#define $b (int_reg[get_rb(inst)])
+#define $rd (int_reg[get_rd(inst)])
+#define $ra (int_reg[get_ra(inst)])
+#define $rb (int_reg[get_rb(inst)])
+#define $fd (float_reg[get_rd(inst)])
+#define $fa (float_reg[get_ra(inst)])
+#define $fb (float_reg[get_rb(inst)])
 
 enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
 
@@ -242,33 +245,37 @@ enum Comm exec_inst(uint32_t inst)
       switch (get_func(inst)) {
         case 0x20:      // add
           sprintf(s, "add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
-          $d = $a + $b;
+          $rd = $ra + $rb;
           pc++; break;
         case 0x22:      // sub
           sprintf(s, "sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
-          $d = $a - $b;
+          $rd = $ra - $rb;
           pc++; break;
         case 0x25:      // or
           sprintf(s, "or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
-          $d = $a | $b;
+          $rd = $ra | $rb;
           pc++; break;
         case 0x2a:      // slt
           sprintf(s, "slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
-          $d = ($a < $b)? 1: 0;
+          $rd = ($ra < $rb)? 1: 0;
           pc++; break;
         case 0x04:      // sllv
           sprintf(s, "sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
-          $d = $a << $b;
+          $rd = $ra << $rb;
           pc++; break;
         case 0x00:      // sll
           sprintf(s, "sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
-          $d = $a << get_shift(inst);
+          $rd = $ra << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
           reset_bold();
           sprintf(s, "jr r%d\n", get_rd(inst));
-          pc = $d;
+          pc = $rd;
           break;
+        case 0x10:      // fneg
+          sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
+          $fd = (-1) * $fa;
+          pc++; break;
         default:
           reset_bold();
           printf("Unknown funct: 0x%x.\n", get_func(inst));
@@ -281,43 +288,43 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x08:      // addi
       sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      $d = $a + get_imm_signed(inst);
+      $rd = $ra + get_imm_signed(inst);
       pc++; break;
     case 0x18:      // subi
       sprintf(s, "subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      $d = $a - get_imm_signed(inst);
+      $rd = $ra - get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
       sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      copy((char*)(&($d)), &mem[$a + get_imm_signed(inst)], 4);
+      copy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
       reset_bold();
       sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      copy(&mem[$a + get_imm_signed(inst)], (char*)(&($d)), 4);
+      copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($rd)), 4);
       pc++; break;
     case 0x0f:      // lui
       sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
-      $d = get_imm(inst) << 16;
+      $rd = get_imm(inst) << 16;
       pc++; break;
     case 0x0d:      // ori
       sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
-      $d = $a | get_imm(inst);
+      $rd = $ra | get_imm(inst);
       pc++; break;
     case 0x0a:      // slti
       sprintf(s, "slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      $d = ($a < get_imm_signed(inst))? 1: 0;
+      $rd = ($ra < get_imm_signed(inst))? 1: 0;
       pc++; break;
     case 0x04:      // beq
       reset_bold();
       sprintf(s, "beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      if ($d == $a) pc += 1 + get_imm_signed(inst);
+      if ($rd == $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x05:      // bne
       reset_bold();
       sprintf(s, "bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      if ($d != $a) pc += 1 + get_imm_signed(inst);
+      if ($rd != $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x02:      // j

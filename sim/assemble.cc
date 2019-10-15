@@ -14,6 +14,7 @@
 
 #define $(i) (std::stoi(v[i]))
 #define $r(i) (std::stoi(v[i].substr(1)))
+#define $f(i) (std::stoi(v[i].substr(1)))
 
 uint32_t encode_r(int func, int rd, int ra, int rb, int shift)
 {
@@ -96,6 +97,17 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("j")) ret = encode_j(0x02, $(1));
   else if (!op.compare("jr")) ret = encode_r(0x08, $r(1), 0x00, 0x00, 0x00);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
+  // Floating point
+  else if (!op.compare("fneg")) ret = encode_r(0x10, $f(1), $f(2), 0x00, 0x00);
+  else if (!op.compare("fadd")) ret = encode_r(0x00, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fsub")) ret = encode_r(0x01, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fmul")) ret = encode_r(0x02, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fdiv")) ret = encode_r(0x03, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("lwcZ")) ret = encode_i(0x30, $f(1), $f(2), $(3));
+  else if (!op.compare("swcZ")) ret = encode_i(0x38, $f(1), $f(2), $(3));
+  else if (!op.compare("fclt")) ret = encode_r(0x20, 0x00, $f(1), $f(2), 0x00);
+  else if (!op.compare("bc1t")) ret = encode_i(0x11, 0x08, 0x01, $(1));
+  else if (!op.compare("bc1f")) ret = encode_i(0x15, 0x08, 0x00, $(1));
   // Others
   else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00); // nop
 
