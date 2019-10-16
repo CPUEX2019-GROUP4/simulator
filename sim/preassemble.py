@@ -86,6 +86,7 @@ out = 'piyo.s'
 import sys
 
 if __name__ == '__main__':
+    #print(len(sys.argv))
     if len(sys.argv) == 3:
         path = sys.argv[1]
         out = sys.argv[2]
