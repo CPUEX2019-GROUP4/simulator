@@ -118,7 +118,6 @@ if __name__ == '__main__':
     with open(path) as f:
         ret = subst_labels(mappings, labels, f)
         ret = halo16(ret, mappings, labels)
-        print(ret)
         with open(out, "w") as writer:
             writer.writelines(ret)
     write_labels('label.txt', labels, mappings)
