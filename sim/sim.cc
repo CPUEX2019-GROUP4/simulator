@@ -251,6 +251,14 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra - $rb;
           pc++; break;
+        case 0x0c:      // div2
+          sprintf(s, "div2 r%d r%d\n", get_rd(inst), get_ra(inst));
+          $rd = $ra > 1;
+          pc++; break;
+        case 0x1c:      // div10
+          sprintf(s, "div10 r%d r%d\n", get_rd(inst), get_ra(inst));
+          $rd = $ra / 10;
+          pc++; break;
         case 0x25:      // or
           sprintf(s, "or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra | $rb;
@@ -306,9 +314,14 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa * $fb;
           pc++; break;
-        case 0x11:      // fclt
+        case 0x20:      // fclt
           sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
           if ($fa < $fb) int_reg[27] |= 0x02;
+          else int_reg[27] &= 0xfffd;
+          pc++; break;
+        case 0x28:      // fcz
+          sprintf(s, "fcz f%d \n", get_ra(inst));
+          if ($fa == 0.0) int_reg[27] |= 0x02;
           else int_reg[27] &= 0xfffd;
           pc++; break;
         default:
@@ -396,6 +409,16 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "bc1f %d\n", get_imm_signed(inst));
       if (!(int_reg[27]&0x0002)) pc += 1 + get_imm_signed(inst);
       else pc++;
+      break;
+    case 0x1c:      // ftoi
+      reset_bold();
+      sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
+      $rd = (int) $fa;
+      break;
+    case 0x1d:      // itof
+      reset_bold();
+      sprintf(s, "itof f%d r%d\n", get_rd(inst), get_ra(inst));
+      $fd = (float) $ra;
       break;
     default:
       reset_bold();
