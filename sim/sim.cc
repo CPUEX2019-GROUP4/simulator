@@ -14,7 +14,7 @@
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 10000
 #define N_REG 32
-#define SIZE_MEM 4096
+#define SIZE_MEM (4<<20)
 
 #define $rd (int_reg[get_rd(inst)])
 #define $ra (int_reg[get_ra(inst)])
@@ -272,9 +272,32 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "jr r%d\n", get_rd(inst));
           pc = $rd;
           break;
+        case 0x08:      // jalr
+          reset_bold();
+          sprintf(s, "jalr r%d\n", get_rd(inst));
+          int_reg[31] = pc + 1;
+          pc = $rd;
+          break;
         case 0x10:      // fneg
           sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = (-1) * $fa;
+          pc++; break;
+        case 0x03:      // fadd
+          sprintf(s, "fadd f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $fd = $fa + $fb;
+          pc++; break;
+        case 0x01:      // fsub
+          sprintf(s, "fsub f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $fd = $fa - $fb;
+          pc++; break;
+        case 0x02:      // fmul
+          sprintf(s, "fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $fd = $fa * $fb;
+          pc++; break;
+        case 0x11:      // fclt
+          sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
+          if ($fa < $fb) int_reg[27] |= 0x02;
+          else int_reg[27] &= 0xfffd;
           pc++; break;
         default:
           reset_bold();
@@ -337,6 +360,30 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "jal %d\n", get_addr(inst));
       int_reg[31] = pc + 1;
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+      break;
+    case 0x30:      // lwcZ
+      reset_bold();
+      sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      copy((char*)(&($fd)), &mem[$ra + get_imm_signed(inst)], 4);
+      pc++;
+      break;
+    case 0x38:      // swcZ
+      reset_bold();
+      sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
+      pc++;
+      break;
+    case 0x11:      // bc1t
+      reset_bold();
+      sprintf(s, "bc1t %d\n", get_imm_signed(inst));
+      if ((int_reg[27]&0x0002) = 1) pc += 1 + get_imm_signed(inst);
+      else pc++;
+      break;
+    case 0x15:      // bc1f
+      reset_bold();
+      sprintf(s, "bc1f %d\n", get_imm_signed(inst));
+      if ((int_reg[27]&0x0002) != 1) pc += 1 + get_imm_signed(inst);
+      else pc++;
       break;
     default:
       reset_bold();
