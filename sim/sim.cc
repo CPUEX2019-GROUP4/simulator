@@ -272,12 +272,24 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "jr r%d\n", get_rd(inst));
           pc = $rd;
           break;
-        case 0x08:      // jalr
+        case 0x0f:      // jalr
           reset_bold();
           sprintf(s, "jalr r%d\n", get_rd(inst));
           int_reg[31] = pc + 1;
           pc = $rd;
           break;
+        default:
+          reset_bold();
+          printf("Unknown funct: 0x%x.\n", get_func(inst));
+          printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
+                 get_opcode(inst), get_rd(inst), get_ra(inst), get_rb(inst),
+                 get_shift(inst), get_func(inst));
+          puts("Abort.");
+          exit(1);
+      }
+      break;
+    case 0x11:      /* floating point */
+      switch (get_func(inst)) {
         case 0x10:      // fneg
           sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = (-1) * $fa;
@@ -373,16 +385,16 @@ enum Comm exec_inst(uint32_t inst)
       copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
       pc++;
       break;
-    case 0x11:      // bc1t
+    case 0x13:      // bc1t
       reset_bold();
       sprintf(s, "bc1t %d\n", get_imm_signed(inst));
-      if ((int_reg[27]&0x0002) = 1) pc += 1 + get_imm_signed(inst);
+      if (int_reg[27]&0x0002) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x15:      // bc1f
       reset_bold();
       sprintf(s, "bc1f %d\n", get_imm_signed(inst));
-      if ((int_reg[27]&0x0002) != 1) pc += 1 + get_imm_signed(inst);
+      if (!(int_reg[27]&0x0002)) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     default:

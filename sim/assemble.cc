@@ -16,12 +16,14 @@
 #define $r(i) (std::stoi(v[i].substr(1)))
 #define $f(i) (std::stoi(v[i].substr(1)))
 
-uint32_t encode_r(int func, int rd, int ra, int rb, int shift)
+uint32_t encode_r(int opcode, int func, int rd, int ra, int rb, int shift)
 {
   //printf("opcode: %d, rd: %d, ra: %d, rb: %d, shift: %d, func: %d\n", opcode,
   //       rd, ra, rb, shift, func);
   uint32_t ret = 0;
 
+  if (opcode >= 64) {std::cerr << "opcode (" << opcode << ") >= 64\n";exit(1);}
+  else ret |= (opcode & 0x3f) << 26;
   if (rd >= 32) {std::cerr << "rd (" << rd << ") >= 32\n";exit(1);}
   else ret |= (rd & 0x1f) << 21;
   if (ra >= 32) {std::cerr << "ra (" << ra << ") >= 32\n";exit(1);}
@@ -75,8 +77,8 @@ uint32_t assemble(std::vector<std::string> v)
   std::string op = v[0];
 
   // Arithmetic
-  if (!op.compare("add")) ret = encode_r(0x20, $r(1), $r(2), $r(3), 0x00);
-  else if (!op.compare("sub")) ret = encode_r(0x22, $r(1), $r(2), $r(3), 0x00);
+  if (!op.compare("add")) ret = encode_r(0x00, 0x20, $r(1), $r(2), $r(3), 0x00);
+  else if (!op.compare("sub")) ret = encode_r(0x00, 0x22, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("addi")) ret = encode_i(0x08, $r(1), $r(2), $(3));
   else if (!op.compare("subi")) ret = encode_i(0x18, $r(1), $r(2), $(3)); // subi
   // Load/Store
@@ -84,33 +86,33 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("sw")) ret = encode_i(0x2b, $r(1), $r(2), $(3));
   else if (!op.compare("lui")) ret = encode_i(0x0f, $r(1), 0x00, $(2));
   // Logic
-  else if (!op.compare("or")) ret = encode_r(0x25, $r(1), $r(2), $r(3), 0x00);
+  else if (!op.compare("or")) ret = encode_r(0x00, 0x25, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("ori")) ret = encode_i(0x0d, $r(1), $r(2), $(3));
-  else if (!op.compare("slt")) ret = encode_r(0x2a, $r(1), $r(2), $r(3), 0x00);
+  else if (!op.compare("slt")) ret = encode_r(0x00, 0x2a, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("slti")) ret = encode_i(0x0a, $r(1), $r(2), $(3));
   // Shift
-  else if (!op.compare("sll")) ret = encode_r(0x00, $r(1), $r(2), 0x00, $(3));
-  else if (!op.compare("sllv")) ret = encode_r(0x04, $r(1), $r(2), $r(3), 0x00);
+  else if (!op.compare("sll")) ret = encode_r(0x00, 0x00, $r(1), $r(2), 0x00, $(3));
+  else if (!op.compare("sllv")) ret = encode_r(0x00, 0x04, $r(1), $r(2), $r(3), 0x00);
   // Jump
   else if (!op.compare("beq")) ret = encode_i(0x04, $r(1), $r(2), $(3));
   else if (!op.compare("bne")) ret = encode_i(0x05, $r(1), $r(2), $(3));
   else if (!op.compare("j")) ret = encode_j(0x02, $(1));
-  else if (!op.compare("jr")) ret = encode_r(0x08, $r(1), 0x00, 0x00, 0x00);
+  else if (!op.compare("jr")) ret = encode_r(0x00, 0x08, $r(1), 0x00, 0x00, 0x00);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
-  else if (!op.compare("jalr")) ret = encode_r(0x0f, $r(1), 0x00, 0x00, 0x00);
+  else if (!op.compare("jalr")) ret = encode_r(0x00, 0x0f, $r(1), 0x00, 0x00, 0x00);
   // Floating point
-  else if (!op.compare("fneg")) ret = encode_r(0x10, $f(1), $f(2), 0x00, 0x00);
-  else if (!op.compare("fadd")) ret = encode_r(0x03, $f(1), $f(2), $f(3), 0x00);
-  else if (!op.compare("fsub")) ret = encode_r(0x01, $f(1), $f(2), $f(3), 0x00);
-  else if (!op.compare("fmul")) ret = encode_r(0x02, $f(1), $f(2), $f(3), 0x00);
-  //else if (!op.compare("fdiv")) ret = encode_r(0x03, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fneg")) ret = encode_r(0x11, 0x10, $f(1), $f(2), 0x00, 0x00);
+  else if (!op.compare("fadd")) ret = encode_r(0x11, 0x03, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fsub")) ret = encode_r(0x11, 0x01, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fmul")) ret = encode_r(0x11, 0x02, $f(1), $f(2), $f(3), 0x00);
+  //else if (!op.compare("fdiv")) ret = encode_r(0x11, 0x03, $f(1), $f(2), $f(3), 0x00);
   else if (!op.compare("lwcZ")) ret = encode_i(0x30, $f(1), $f(2), $(3));
   else if (!op.compare("swcZ")) ret = encode_i(0x38, $f(1), $f(2), $(3));
-  else if (!op.compare("fclt")) ret = encode_r(0x11, 0x00, $f(1), $f(2), 0x00);
-  else if (!op.compare("bc1t")) ret = encode_i(0x11, 0x08, 0x01, $(1));
+  else if (!op.compare("fclt")) ret = encode_r(0x11, 0x11, 0x00, $f(1), $f(2), 0x00);
+  else if (!op.compare("bc1t")) ret = encode_i(0x13, 0x08, 0x01, $(1));
   else if (!op.compare("bc1f")) ret = encode_i(0x15, 0x08, 0x00, $(1));
   // Others
-  else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00); // nop
+  else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00, 0x00); // nop
 
   else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
 

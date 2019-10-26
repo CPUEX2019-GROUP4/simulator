@@ -80,6 +80,29 @@ def write_ninsts(path, mappings):
         buf = [str(ninst) + ' ' +  str(nlin) + '\n' for (nlin,ninst) in mappings]
         f.writelines(buf)
 
+def halo16(lines, mappings, labels):
+    ret = []
+    for line in lines:
+        while True:
+            if 'ha16' not in line and 'lo16' not in line:
+                break
+            s = line.find('ha16(')
+            if s != -1:
+                e = line.find(')', s + len('ha16('))
+                l = line[s + len('ha16('):e]
+                ninst = label_to_ninst(labels, mappings, l)
+                num = ninst & 0xff00
+                line = line[:s] + str(num) + line[e+1:]
+            s = line.find('lo16(')
+            if s != -1:
+                e = line.find(')', s + len('lo16('))
+                l = line[s + len('lo16('):e]
+                ninst = label_to_ninst(labels, mappings, l)
+                num = ninst & 0xff
+                line = line[:s] + str(num) + line[e+1:]
+        ret.append(line)
+    return ret
+
 path = 'foo.s'
 out = 'piyo.s'
 
@@ -94,6 +117,8 @@ if __name__ == '__main__':
         mappings, labels = gather(f)
     with open(path) as f:
         ret = subst_labels(mappings, labels, f)
+        ret = halo16(ret, mappings, labels)
+        print(ret)
         with open(out, "w") as writer:
             writer.writelines(ret)
     write_labels('label.txt', labels, mappings)
