@@ -81,8 +81,8 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("sub")) ret = encode_r(0x00, 0x22, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("addi")) ret = encode_i(0x08, $r(1), $r(2), $(3));
   //else if (!op.compare("subi")) ret = encode_i(0x18, $r(1), $r(2), $(3)); // subi
-  else if (!op.compare("div2")) ret = encode_r(0x00, 0x0c, $r(1), $r(2), 0x00);
-  else if (!op.compare("div10")) ret = encode_r(0x00, 0x1c, $r(1), $r(2), 0x00);
+  else if (!op.compare("div2")) ret = encode_r(0x00, 0x0c, $r(1), $r(2), 0x00, 0x00);
+  else if (!op.compare("div10")) ret = encode_r(0x00, 0x1c, $r(1), $r(2), 0x00, 0x00);
   // Load/Store
   else if (!op.compare("lw")) ret = encode_i(0x23, $r(1), $r(2), $(3));
   else if (!op.compare("sw")) ret = encode_i(0x2b, $r(1), $r(2), $(3));
