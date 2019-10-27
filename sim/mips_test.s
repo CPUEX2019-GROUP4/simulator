@@ -1,12 +1,13 @@
+    ori r30 r0 1024
 #    main program starts
-    ori r1 r0 100
+    ori r1 r0 10
     or r25 r30 r0
     addi r30 r30 8
     lui r2 ha16(f.8)
     ori r2 r2 lo16(f.8)
     sw r2 r25 0
     sw r1 r25 4
-    ori r1 r0 3
+    ori r1 r0 123
     sw r31 r29 4
     addi r29 r29 8
     lw r31 r25 0
@@ -16,7 +17,7 @@
     lw r31 r29 4
     sw r31 r29 4
     addi r29 r29 8
-nop
+    nop
 #    main program ends
 f.8:
     lw r2 r25 4

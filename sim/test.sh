@@ -9,4 +9,4 @@ if [ $# != 1 ]; then
 fi
 
 
-make && python preassemble.py $1 $intermediate  && ./assemble $intermediate $binary && rlwrap ./sim $binary label.txt inst.txt
+make && python preassemble.py $1 $intermediate  && ./assemble $intermediate $binary && rlwrap ./sim $binary label.txt inst.txt out.txt

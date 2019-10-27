@@ -55,11 +55,18 @@ std::unordered_map<std::string,int> labels;  // ラベルに対するソース�
 int breakpoint;                   // breakpointの命令番号
 std::unordered_map<int,int> regs_to_monitor;    // モニターするレジスタたち
 std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
+std::ofstream ofs;                // OUT 命令の出力ファイル
 
 void init(void)
 {
   breakpoint = -1;
   dest_reg = -1;
+}
+
+void init_ofs(char *path)
+{
+  ofs.open(path, std::ios::out | std::ios::trunc); // append はつけない
+  if (ofs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
 }
 
 void init_labels(char *path)
@@ -414,11 +421,21 @@ enum Comm exec_inst(uint32_t inst)
       reset_bold();
       sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
       $rd = (int) $fa;
+      pc++;
       break;
     case 0x1d:      // itof
       reset_bold();
       sprintf(s, "itof f%d r%d\n", get_rd(inst), get_ra(inst));
       $fd = (float) $ra;
+      pc++;
+      break;
+    case 0x3f:      // out
+      reset_bold();
+      sprintf(s, "OUT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      {
+        int32_t val = ($rd + get_imm_signed(inst)) % 256;
+        ofs << val << std::endl;
+      }
       break;
     default:
       reset_bold();
@@ -557,8 +574,8 @@ void test(void)
 
 int main(int argc, char **argv)
 {
-  if (argc != 4) {
-    printf("USAGE: %s {{binary}} {{labels}} {{insts}}\n", argv[0]);
+  if (argc != 5) {
+    printf("USAGE: %s {{binary}} {{labels}} {{insts}} {{ofs}}\n", argv[0]);
     exit(1);
   }
 
@@ -567,6 +584,7 @@ int main(int argc, char **argv)
   init_inst(argv[1]);
   init_labels(argv[2]);
   init_ninsts(argv[3]);
+  init_ofs(argv[4]);
 
   show_help();
   putchar('\n');

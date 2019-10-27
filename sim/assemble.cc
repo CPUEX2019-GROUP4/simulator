@@ -118,6 +118,7 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("itof")) ret = encode_i(0x1d, $f(1), $r(2), 0x00);
   // Others
   else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00, 0x00); // nop
+  else if (!op.compare("out")) ret = encode_i(0x3f, $r(1), 0x00, $(2));
 
   else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
 
