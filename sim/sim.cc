@@ -436,6 +436,7 @@ enum Comm exec_inst(uint32_t inst)
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
         ofs << val << std::endl;
       }
+      pc++;
       break;
     default:
       reset_bold();
