@@ -65,6 +65,7 @@ void init(void)
 
 void init_ofs(char *path)
 {
+  //ofs.open(path, std::ios::out | std::ios::trunc | std::ios::binary); // append はつけない
   ofs.open(path, std::ios::out | std::ios::trunc); // append はつけない
   if (ofs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
 }
@@ -434,7 +435,7 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "OUT r%d %d\n", get_rd(inst), get_imm_signed(inst));
       {
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
-        ofs << val << std::endl;
+        ofs.write((char*)&val, sizeof(int32_t));
       }
       pc++;
       break;
