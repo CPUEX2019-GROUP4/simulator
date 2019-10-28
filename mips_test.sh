@@ -12,8 +12,8 @@ cd min-caml
 make min-caml
 make test/$1.s
 make test/$1.ans
-vim test/$1.s
-cp test/$1.s ../../simulator/sim/mips_test.s
+#vim test/$1.s
+cat test/$1.s libmincaml.S > ../../simulator/sim/mips_test.s
 cd ../../simulator/sim/
 #./test.sh mips_test.s
 if [ $# = 2 ]; then
@@ -21,3 +21,11 @@ if [ $# = 2 ]; then
 else
   ./test.sh mips_test.s
 fi
+
+echo "--- out.txt ---"
+cat out.txt
+echo ""
+
+echo "--- answer ---"
+cat ../$DIR_COMPILER/min-caml/test/$1.ans
+echo ""
