@@ -244,8 +244,6 @@ enum Comm exec_inst(uint32_t inst)
 {
   if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
-  set_bold(get_rd(inst));
-
   char s[256];
 
   switch (get_opcode(inst)) {
@@ -284,12 +282,10 @@ enum Comm exec_inst(uint32_t inst)
           $rd = $ra << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
-          reset_bold();
           sprintf(s, "jr r%d\n", get_rd(inst));
           pc = $rd;
           break;
         case 0x0f:      // jalr
-          reset_bold();
           sprintf(s, "jalr r%d\n", get_rd(inst));
           int_reg[31] = pc + 1;
           pc = $rd;
@@ -355,7 +351,6 @@ enum Comm exec_inst(uint32_t inst)
       copy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
-      reset_bold();
       sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($rd)), 4);
       pc++; break;
@@ -395,13 +390,11 @@ enum Comm exec_inst(uint32_t inst)
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x30:      // lwcZ
-      reset_bold();
       sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy((char*)(&($fd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++;
       break;
     case 0x38:      // swcZ
-      reset_bold();
       sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
       pc++;
@@ -419,15 +412,29 @@ enum Comm exec_inst(uint32_t inst)
       else pc++;
       break;
     case 0x1c:      // ftoi
-      reset_bold();
       sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
       $rd = (int) $fa;
       pc++;
       break;
     case 0x1d:      // itof
-      reset_bold();
       sprintf(s, "itof f%d r%d\n", get_rd(inst), get_ra(inst));
       $fd = (float) $ra;
+      pc++;
+      break;
+    case 0x3c:      // flui
+      sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
+      {
+        uint16_t c = get_imm(inst);
+        copy((char*)(&($fd))+2, (char*)&c, 2);
+      }
+      pc++;
+      break;
+    case 0x3d:      // fori
+      sprintf(s, "fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      {
+        uint16_t tmp = (uint16_t)(((uint32_t)($fa) & 0x00ff)) | get_imm(inst);
+        copy((char*)&($fd), (char*)&tmp, 2);
+      }
       pc++;
       break;
     case 0x3f:      // out
