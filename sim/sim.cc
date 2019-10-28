@@ -161,13 +161,6 @@ void print_regs(void)
     printf("\t%d f%d = %f\n",  ++count, it, float_reg[it]);
   }
 }
-/**--- strcpy()のnull文字付加なしver ---*/
-int copy(char *dst, char *src, int n)
-{
-  int i = 0;
-  for (; i<n; i++) dst[i] = src[i];
-  return i;
-}
 
 /**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
 std::vector<std::string> split(std::string s, std::string delimiter, bool shrink=true)
@@ -347,11 +340,11 @@ enum Comm exec_inst(uint32_t inst)
       pc++; break;
     case 0x23:      // lw
       sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      copy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
+      memcpy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
       sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($rd)), 4);
+      memcpy(&mem[$ra + get_imm_signed(inst)], (char*)(&($rd)), 4);
       pc++; break;
     case 0x0f:      // lui
       sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
@@ -390,12 +383,12 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x30:      // lwcZ
       sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      copy((char*)(&($fd)), &mem[$ra + get_imm_signed(inst)], 4);
+      memcpy((char*)(&($fd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++;
       break;
     case 0x38:      // swcZ
       sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      copy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
+      memcpy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
       pc++;
       break;
     case 0x13:      // bc1t
@@ -424,7 +417,7 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
       {
         uint16_t c = get_imm(inst);
-        copy((char*)(&($fd))+2, (char*)&c, 2);
+        memcpy((char*)(&($fd))+2, (char*)&c, 2);
       }
       pc++;
       break;
@@ -432,7 +425,7 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       {
         uint16_t tmp = (uint16_t)(((uint32_t)($fa) & 0x00ff)) | get_imm(inst);
-        copy((char*)&($fd), (char*)&tmp, 2);
+        memcpy((char*)&($fd), (char*)&tmp, 2);
       }
       pc++;
       break;

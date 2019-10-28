@@ -1,88 +1,121 @@
     lui r30 2
 #    main program starts
+    # 1000000.000000
+    flui f0 18804
+    fori f0 f0 9216
+    # 1.000000
+    flui f1 16256
+    # 2.000000
+    flui f2 16384
+    # 3.000000
+    flui f3 16448
     or r1 r30 r0
-    addi r30 r30 8
-    lui r2 ha16(dbl.10)
-    ori r2 r2 lo16(dbl.10)
-    sw r2 r1 0
+    addi r30 r30 24
+    swcZ f3 r1 16
+    swcZ f2 r1 8
+    swcZ f1 r1 0
+    # 4.000000
+    flui f1 16512
+    # 5.000000
+    flui f2 16544
+    # 6.000000
+    flui f3 16576
     or r2 r30 r0
-    addi r30 r30 8
-    lui r3 ha16(inc.12)
-    ori r3 r3 lo16(inc.12)
-    sw r3 r2 0
-    or r3 r30 r0
-    addi r30 r30 8
-    lui r4 ha16(dec.14)
-    ori r4 r4 lo16(dec.14)
-    sw r4 r3 0
-    sw r2 r29 0
-    mv r2 r3
-    sw r31 r29 4
-    addi r29 r29 8
-    jal compose.7
-    subi r29 r29 8
-    lw r31 r29 4
-    or r2 r0 r1
-    lw r1 r29 0
-    sw r31 r29 4
-    addi r29 r29 8
-    jal compose.7
-    subi r29 r29 8
-    lw r31 r29 4
-    or r25 r0 r1
-    ori r1 r0 123
-    sw r31 r29 4
-    addi r29 r29 8
-    lw r31 r25 0
-    mv r26 r31
-    jalr r26
-    subi r29 r29 8
-    lw r31 r29 4
-    sw r31 r29 4
-    addi r29 r29 8
+    addi r30 r30 24
+    swcZ f3 r2 16
+    swcZ f2 r2 8
+    swcZ f1 r2 0
+    swcZ f0 r29 0
+    sw r31 r29 12
+    addi r29 r29 16
+    jal inprod.29
+    subi r29 r29 16
+    lw r31 r29 12
+    lwcZ f1 r29 0
+    fmul f0 f1 f0
+    ftoi r1 f0
+    sw r31 r29 12
+    addi r29 r29 16
     jal min_caml_print_int
-    subi r29 r29 8
-    lw r31 r29 4
+    subi r29 r29 16
+    lw r31 r29 12
 nop
 #    main program ends
-composed.22:
-    lw r2 r25 8
-    lw r25 r25 4
-    sw r2 r29 0
-    sw r31 r29 4
-    addi r29 r29 8
-    lw r31 r25 0
-    mv r26 r31
-    jalr r26
-    subi r29 r29 8
-    lw r31 r29 4
-    lw r25 r29 0
-    lw r24 r25 0
-    or r26 r0 r24
-    jr r26
-compose.7:
-    or r3 r30 r0
-    addi r30 r30 16
-    lui r4 ha16(composed.22)
-    ori r4 r4 lo16(composed.22)
-    sw r4 r3 0
-    sw r2 r3 8
-    sw r1 r3 4
-    or r1 r3 r0
+getx.23:
+    lwcZ f0 r1 0
     jr r31
-dbl.10:
-    add r1 r1 r1
+gety.25:
+    lwcZ f0 r1 8
     jr r31
-inc.12:
-    addi r1 r1 1
+getz.27:
+    lwcZ f0 r1 16
     jr r31
-dec.14:
-    subi r1 r1 1
+inprod.29:
+    sw r1 r29 0
+    sw r2 r29 4
+    sw r31 r29 12
+    addi r29 r29 16
+    jal getx.23
+    subi r29 r29 16
+    lw r31 r29 12
+    lw r1 r29 4
+    swcZ f0 r29 8
+    sw r31 r29 20
+    addi r29 r29 24
+    jal getx.23
+    subi r29 r29 24
+    lw r31 r29 20
+    lwcZ f1 r29 8
+    fmul f0 f1 f0
+    lw r1 r29 0
+    swcZ f0 r29 16
+    sw r31 r29 28
+    addi r29 r29 32
+    jal gety.25
+    subi r29 r29 32
+    lw r31 r29 28
+    lw r1 r29 4
+    swcZ f0 r29 24
+    sw r31 r29 36
+    addi r29 r29 40
+    jal gety.25
+    subi r29 r29 40
+    lw r31 r29 36
+    lwcZ f1 r29 24
+    fmul f0 f1 f0
+    lwcZ f1 r29 16
+    fadd f0 f1 f0
+    lw r1 r29 0
+    swcZ f0 r29 32
+    sw r31 r29 44
+    addi r29 r29 48
+    jal getz.27
+    subi r29 r29 48
+    lw r31 r29 44
+    lw r1 r29 4
+    swcZ f0 r29 40
+    sw r31 r29 52
+    addi r29 r29 56
+    jal getz.27
+    subi r29 r29 56
+    lw r31 r29 52
+    lwcZ f1 r29 40
+    fmul f0 f1 f0
+    lwcZ f1 r29 32
+    fadd f0 f1 f0
     jr r31
-# print_int
+#    main program ends
 min_caml_print_int:
+    slti r28 r1 0
+    bne r0 r28 print_int_bge_else.1
+    j print_int_bge_cont
+print_int_bge_else.1:
+    addi r2 r0 45
+    out r2 0
+    sub r1 r0 r1
+print_int_bge_cont:
     slti r28 r1 10
-    bne r0 r28 print_int_bge_else.25
+    bne r0 r28 print_int_bge_else.0
     div10 r2 r1
     sw r1 r29 0
     sw r2 r29 4
@@ -100,12 +133,10 @@ min_caml_print_int:
     sub r1 r2 r1
     out r1 48
     jr r31
-print_int_bge_else.25:
+print_int_bge_else.0:
     out r1 48
     jr r31
-    lui r30 2
 # print_char
 min_caml_print_char:
     out r1 0
     jr r31
-    lui r30 2
