@@ -1,5 +1,3 @@
-#define TEST_FLAG 0
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -56,6 +54,7 @@ int breakpoint;                   // breakpointの命令番号
 std::unordered_map<int,int> regs_to_monitor;    // モニターするレジスタたち
 std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
 std::ofstream ofs;                // OUT 命令の出力ファイル
+int test_flag;                    // 出力のみ行うモード
 
 void init(void)
 {
@@ -235,7 +234,7 @@ enum Comm exec_inst(void)
     printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
     exit(1);
   }
-  if (!TEST_FLAG) printf("%d: ", ninsts.at(pc));
+  if (!test_flag) printf("%d: ", ninsts.at(pc));
   return exec_inst(inst_reg[pc]);
 }
 
@@ -451,7 +450,7 @@ enum Comm exec_inst(uint32_t inst)
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
       exit(1);
   }
-  if (!TEST_FLAG) printf(s);
+  if (!test_flag) printf(s);
   return OP;
 }
 
@@ -577,15 +576,17 @@ void test(void)
   while (1) {
     if (exec_inst() == NOP) break;
   }
-  analyze_commands(std::string("p r2"));
-  print_regs();
 }
 
 int main(int argc, char **argv)
 {
-  if (argc != 5) {
-    printf("USAGE: %s {{binary}} {{labels}} {{insts}} {{ofs}}\n", argv[0]);
+  if (argc != 6) {
+    printf("USAGE: %s {{binary}} {{labels}} {{insts}} {{ofs}} {{test_flag}}\n", argv[0]);
     exit(1);
+  }
+
+  if (!strcmp(argv[5], "1") || !strcmp(argv[5], "test") || !strcmp(argv[5], "true")) {
+    test_flag = 1;
   }
 
   init();
@@ -598,7 +599,7 @@ int main(int argc, char **argv)
   show_help();
   putchar('\n');
 
-  if (TEST_FLAG) test();
+  if (test_flag) test();
   else {
     std::string s;
     while (1) {
