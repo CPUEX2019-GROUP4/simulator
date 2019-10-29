@@ -11,6 +11,7 @@
 
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 10000
+//#define LEN_INSTRUCTION (1<<32)
 #define N_REG 32
 #define SIZE_MEM (4<<20)
 
@@ -37,6 +38,7 @@ enum Comm analyze_commands(std::string);
 
 // registers
 uint32_t *inst_reg;           // instruction register
+//uint32_t inst_reg[LEN_INSTRUCTION];           // instruction register
 uint32_t pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
@@ -298,7 +300,7 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = (-1) * $fa;
           pc++; break;
-        case 0x03:      // fadd
+        case 0x00:      // fadd
           sprintf(s, "fadd f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa + $fb;
           pc++; break;
@@ -310,6 +312,10 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa * $fb;
           pc++; break;
+        case 0x03:      // fdiv
+          sprintf(s, "fdiv f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $fd = $fa / $fb;
+          pc++; break;
         case 0x20:      // fclt
           sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
           if ($fa < $fb) int_reg[27] |= 0x02;
@@ -319,6 +325,10 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "fcz f%d \n", get_ra(inst));
           if ($fa == 0.0) int_reg[27] |= 0x02;
           else int_reg[27] &= 0xfffd;
+          pc++; break;
+        case 0x06:      // fmv
+          sprintf(s, "fmv f%d f%d\n", get_rd(inst), get_ra(inst));
+          $fd = $fa;
           pc++; break;
         default:
           reset_bold();

@@ -104,12 +104,13 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("jalr")) ret = encode_r(0x00, 0x0f, $r(1), 0x00, 0x00, 0x00);
   // Floating point
   else if (!op.compare("fneg")) ret = encode_r(0x11, 0x10, $f(1), $f(2), 0x00, 0x00);
-  else if (!op.compare("fadd")) ret = encode_r(0x11, 0x03, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fadd")) ret = encode_r(0x11, 0x00, $f(1), $f(2), $f(3), 0x00);
   else if (!op.compare("fsub")) ret = encode_r(0x11, 0x01, $f(1), $f(2), $f(3), 0x00);
   else if (!op.compare("fmul")) ret = encode_r(0x11, 0x02, $f(1), $f(2), $f(3), 0x00);
-  //else if (!op.compare("fdiv")) ret = encode_r(0x11, 0x03, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("fdiv")) ret = encode_r(0x11, 0x03, $f(1), $f(2), $f(3), 0x00);
   else if (!op.compare("fclt")) ret = encode_r(0x11, 0x20, 0x00, $f(1), $f(2), 0x00);
   else if (!op.compare("fcz")) ret = encode_r(0x11, 0x28, 0x00, $f(1), 0x00, 0x00);
+  else if (!op.compare("fmv")) ret = encode_r(0x11, 0x06, $f(1), $f(2), 0x00, 0x00);
   else if (!op.compare("lwcZ")) ret = encode_i(0x30, $f(1), $f(2), $(3));
   else if (!op.compare("swcZ")) ret = encode_i(0x38, $f(1), $f(2), $(3));
   else if (!op.compare("bc1t")) ret = encode_i(0x13, 0x08, 0x01, $(1));
