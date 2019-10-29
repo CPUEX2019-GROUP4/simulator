@@ -38,7 +38,6 @@ def label_to_ninst(labels, mappings, label):
 
 def subst_labels(mappings, labels, f):
     # returns the substituted list of instructions
-    # 対象はj/jal/beq/bne
     ret = []
     l = 0
     for line in f:
@@ -49,6 +48,10 @@ def subst_labels(mappings, labels, f):
         if line.strip().startswith('jal '):
             n = label_to_ninst(labels, mappings, line.strip()[4:])
             line = 'jal ' + str(n) + '\n'
+        elif line.strip().startswith('bc1'): # bc1t/bc1f
+            v = line.strip().split(' ')
+            n = label_to_ninst(labels, mappings, v[-1]) - nlin_to_ninst(mappings, l) - 1
+            line = v[0] + ' ' + str(n) + '\n'
         elif line.strip().startswith('j '):
             n = label_to_ninst(labels, mappings, line.strip()[2:])
             line = 'j ' + str(n) + '\n'

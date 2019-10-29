@@ -348,7 +348,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++; break;
     case 0x0f:      // lui
       sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
-      $rd = get_imm(inst) << 16;
+      $rd = (get_imm(inst) << 16) & 0xff00;
       pc++; break;
     case 0x0d:      // ori
       sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
@@ -418,6 +418,8 @@ enum Comm exec_inst(uint32_t inst)
       {
         uint16_t c = get_imm(inst);
         memcpy((char*)(&($fd))+2, (char*)&c, 2);
+        uint16_t z = 0;
+        memcpy((char*)(&($fd)), (char*)&z, 2);
       }
       pc++;
       break;
