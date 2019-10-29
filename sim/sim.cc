@@ -11,7 +11,6 @@
 
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 10000
-//#define LEN_INSTRUCTION (1<<32)
 #define N_REG 32
 #define SIZE_MEM (4<<20)
 
@@ -38,11 +37,11 @@ enum Comm analyze_commands(std::string);
 
 // registers
 uint32_t *inst_reg;           // instruction register
-//uint32_t inst_reg[LEN_INSTRUCTION];           // instruction register
 uint32_t pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
 std::array<char, SIZE_MEM> mem;           // memory
+int32_t fcond_reg;
 
 // Meta variables
 std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
@@ -173,10 +172,8 @@ std::vector<std::string> split(std::string s, std::string delimiter, bool shrink
   if (!delimiter.compare("")) v.push_back(s);
   else {
     while (1) {
-      //std::cout << "outer " << pos << std::endl;
       if (shrink) {
         while (1) {
-          //std::cout << "inner " << pos << std::endl;
           if (pos >= s.length()) break;
           if (s.find(delimiter, pos) == pos) pos += delimiter.length();
           else break;
@@ -318,13 +315,13 @@ enum Comm exec_inst(uint32_t inst)
           pc++; break;
         case 0x20:      // fclt
           sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
-          if ($fa < $fb) int_reg[27] |= 0x02;
-          else int_reg[27] &= 0xfffd;
+          if ($fa < $fb) fcond_reg |= 0x02;
+          else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x28:      // fcz
           sprintf(s, "fcz f%d \n", get_ra(inst));
-          if ($fa == 0.0) int_reg[27] |= 0x02;
-          else int_reg[27] &= 0xfffd;
+          if ($fa == 0.0) fcond_reg |= 0x02;
+          else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x06:      // fmv
           sprintf(s, "fmv f%d f%d\n", get_rd(inst), get_ra(inst));
@@ -404,13 +401,13 @@ enum Comm exec_inst(uint32_t inst)
     case 0x13:      // bc1t
       reset_bold();
       sprintf(s, "bc1t %d\n", get_imm_signed(inst));
-      if (int_reg[27]&0x0002) pc += 1 + get_imm_signed(inst);
+      if (fcond_reg&0x0002) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x15:      // bc1f
       reset_bold();
       sprintf(s, "bc1f %d\n", get_imm_signed(inst));
-      if (!(int_reg[27]&0x0002)) pc += 1 + get_imm_signed(inst);
+      if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x1c:      // ftoi
@@ -446,7 +443,8 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "OUT r%d %d\n", get_rd(inst), get_imm_signed(inst));
       {
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
-        ofs.write((char*)&val, sizeof(int32_t));
+        ofs << (char)val;
+        //ofs.flush();
       }
       pc++;
       break;
@@ -465,8 +463,6 @@ enum Comm analyze_commands(std::string s)
   std::vector<std::string> v;
 
   v = split(s, " ");
-  //for (auto it : v) std::cout << it << " ";
-  //std::cout <<"done\n";
 
   if (!s.compare("")) {
     std::cin.clear();

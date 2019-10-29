@@ -1,8 +1,3 @@
-/** Assember for MIPS.
- * currently assuming that aseembly language is not separated by ',',
- * but by mere whitespaces. E.g. addi r1 r0 300 (not: addi r1,r0,300)
- **/
-
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -115,7 +110,7 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("swcZ")) ret = encode_i(0x38, $f(1), $f(2), $(3));
   else if (!op.compare("bc1t")) ret = encode_i(0x13, 0x08, 0x01, $(1));
   else if (!op.compare("bc1f")) ret = encode_i(0x15, 0x08, 0x00, $(1));
-  else if (!op.compare("ftoi")) ret = encode_i(0x1c, $r(1), $f(2), 0x00); //XXX: wikiの表記が変
+  else if (!op.compare("ftoi")) ret = encode_i(0x1c, $r(1), $f(2), 0x00);
   else if (!op.compare("itof")) ret = encode_i(0x1d, $f(1), $r(2), 0x00);
   else if (!op.compare("flui")) ret = encode_i(0x3c, $f(1), 0x00, $(2));
   else if (!op.compare("fori")) ret = encode_i(0x3d, $f(1), $f(2), $(3));
