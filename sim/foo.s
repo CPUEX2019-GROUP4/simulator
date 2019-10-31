@@ -1,3 +1,3 @@
-lui r1 3
+inflt r1
 flui f1 16656
 nop

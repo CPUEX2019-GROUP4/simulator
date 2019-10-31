@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 10000
@@ -56,6 +57,7 @@ std::unordered_map<int,int> regs_to_monitor;    // モニターするレジス�
 std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
 std::ofstream ofs;                // OUT 命令の出力ファイル
 int test_flag;                    // 出力のみ行うモード
+FILE *fin;                // IN 命令のファイル
 
 void init(void)
 {
@@ -65,9 +67,14 @@ void init(void)
 
 void init_ofs(char *path)
 {
-  //ofs.open(path, std::ios::out | std::ios::trunc | std::ios::binary); // append はつけない
   ofs.open(path, std::ios::out | std::ios::trunc); // append はつけない
-  if (ofs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
+  if (ofs.fail()) {std::cerr << "File '" << path << "' could not be opened\n"; exit(1);}
+}
+
+void init_fin(char *path)
+{
+  fin = fopen(path, "r");
+  if (!fin) {std::cerr << "File '" << path << "' could not be opened\n"; exit(1);}
 }
 
 void init_labels(char *path)
@@ -327,6 +334,10 @@ enum Comm exec_inst(uint32_t inst)
           sprintf(s, "fmv f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = $fa;
           pc++; break;
+        case 0x30:      // sqrt_init
+          sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
+          $fd = sqrt($fa) + 0.5;
+          pc++; break;
         default:
           reset_bold();
           printf("Unknown funct: 0x%x.\n", get_func(inst));
@@ -341,10 +352,12 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = $ra + get_imm_signed(inst);
       pc++; break;
+      /*
     case 0x18:      // subi
       sprintf(s, "subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = $ra - get_imm_signed(inst);
       pc++; break;
+      */
     case 0x23:      // lw
       sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
@@ -445,6 +458,22 @@ enum Comm exec_inst(uint32_t inst)
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
         ofs << (char)val;
         //ofs.flush();
+      }
+      pc++;
+      break;
+    case 0x18:      // inint
+      sprintf(s, "ININT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      {
+        int cc = fread((char*)&($rd), 4, 1, fin);
+        if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
+      }
+      pc++;
+      break;
+    case 0x19:      // inflt
+      sprintf(s, "INFLT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      {
+        int cc = fread((char*)&($fd), 4, 1, fin);
+        if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
       }
       pc++;
       break;
@@ -581,8 +610,8 @@ void test(void)
 
 int main(int argc, char **argv)
 {
-  if (argc != 6) {
-    printf("USAGE: %s {{binary}} {{labels}} {{insts}} {{ofs}} {{test_flag}}\n", argv[0]);
+  if (argc != 7) {
+    printf("USAGE: %s {{binary}} {{labels}} {{insts}} {{ofs}} {{test_flag}} {{input_file}}\n", argv[0]);
     exit(1);
   }
 
@@ -596,6 +625,7 @@ int main(int argc, char **argv)
   init_labels(argv[2]);
   init_ninsts(argv[3]);
   init_ofs(argv[4]);
+  init_fin(argv[6]);
 
   show_help();
   putchar('\n');

@@ -4,3 +4,4 @@ out.txt
 label.txt
 a.out
 mips_test.s
+*.big
