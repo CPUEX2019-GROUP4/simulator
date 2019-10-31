@@ -1,7 +1,8 @@
 #!/bin/bash
 
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-  echo "USAGE: $0 {{input_the_name_of_program}} {{test_flag}}" 1>&2
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+  echo "USAGE: $0 {{program_name}} {{input_file}} {{test_flag}}" 1>&2
+  echo "only test_flag is optional. if not specified, it is set false" 1>&2
   exit 1
 fi
 
@@ -15,12 +16,7 @@ make test/$1.ans
 #vim test/$1.s
 cat test/$1.s libmincaml.S > ../../simulator/sim/mips_test.s
 cd ../../simulator/sim/
-#./test.sh mips_test.s
-if [ $# = 2 ]; then
-  ./test.sh mips_test.s $2
-else
-  ./test.sh mips_test.s
-fi
+./test.sh mips_test.s $@
 
 echo "--- out.txt ---"
 cat out.txt

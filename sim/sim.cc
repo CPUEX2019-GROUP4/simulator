@@ -352,12 +352,6 @@ enum Comm exec_inst(uint32_t inst)
       sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = $ra + get_imm_signed(inst);
       pc++; break;
-      /*
-    case 0x18:      // subi
-      sprintf(s, "subi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      $rd = $ra - get_imm_signed(inst);
-      pc++; break;
-      */
     case 0x23:      // lw
       sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
