@@ -1,5 +1,5 @@
-inflt f1
-flui f1 16656
-inflt f2
-inint r1
+jal hoge
+add r0 r1 r2
+hoge: #   adlk
+addi r1 r2 0
 nop

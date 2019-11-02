@@ -16,4 +16,6 @@ if [ $# = 3 ]; then
   fi
 fi
 
-make && python preassemble.py $1 $intermediate  && ./assemble $intermediate $binary && rlwrap ./sim $binary label.txt inst.txt out.txt $test_flag $2
+#make && python preassemble.py $1 $intermediate  && ./assemble $intermediate $binary && rlwrap ./sim $binary label.txt inst.txt out.txt $test_flag $2
+#make && ./preassemble $1 && python preassemble.py $1 $intermediate  && ./assemble $intermediate $binary && rlwrap ./sim $binary label.txt inst.txt out.txt $test_flag $2
+make && ./preassemble $1 $intermediate  && ./assemble $intermediate $binary && rlwrap ./sim $binary label.txt inst.txt out.txt $test_flag $2
