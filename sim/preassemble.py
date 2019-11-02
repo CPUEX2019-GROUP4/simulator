@@ -123,11 +123,11 @@ if __name__ == '__main__':
     with open('label.txt') as f:
         for line in f:
             tmp = line[:-1].split(" ") # excluding '\n'
-            labels += [(tmp[0], tmp[1])]
+            labels += [(tmp[0], int(tmp[1]))]
     with open('inst.txt') as f:
         for line in f:
             tmp = line[:-1].split(" ") # excluding '\n'
-            mappings += [(tmp[0], tmp[1])]
+            mappings += [(int(tmp[0]), int(tmp[1]))]
     #with open(path) as f:
     #    mappings, labels = gather(f)
     print(mappings)

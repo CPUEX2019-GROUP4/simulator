@@ -19,7 +19,7 @@ std::unordered_map<std::string,int> label_inst_list;
 void gather(std::string path)
 {
   std::ifstream ifs(path);
-  if (ifs.fail()) {std::cerr << "File " << path << "cannot be opened. Abort\n"; exit(1);}
+  if (ifs.fail()) {std::cerr << "File " << path << " cannot be opened. Abort\n"; exit(1);}
 
   std::string s;
   std::vector<std::string> v;
@@ -33,6 +33,7 @@ void gather(std::string path)
     s = split(s, "#", false)[0]; // 行の途中のコメントは削除
     v = split(s, " ");
     if (v.empty()) continue;
+    if (!v[1].compare("")) {std::cout << "Empty\n"; continue;}
     s = v[0];
     v = split(s + "hoge\n", ":", false);
     if (v.size() > 1) label_inst_list.emplace(std::make_pair(v[0], i));
@@ -59,11 +60,10 @@ void subst_labels(std::string infile, std::string outfile)
   while (1) {
     l++;
     if (!std::getline(ifs, s)) break;
-    v = split(s, " ");
     s = split(s, "#", false)[0]; // 行の途中のコメントは削除
-    std::cout << s << std::endl;
+    v = split(s, " ");
     if (v.empty()) {ofs << "#\n"; continue;}
-  std::vector<std::string> vv = split(s + "foo", ":", false);
+    std::vector<std::string> vv = split(s + "foo", ":", false);
     if (vv.size() > 1) {ofs << "#\n"; continue;}
     if (!s.compare("")) continue;
 
@@ -92,7 +92,7 @@ void output_inst(std::unordered_map<int,int> line_inst_list, std::string path = 
 {
   std::string s = "";
   std::ofstream ofs(path);
-  if (ofs.fail()) {std::cerr << "File " << path << "cannot be opened. Abort\n"; exit(1);}
+  if (ofs.fail()) {std::cerr << "File " << path << " cannot be opened. Abort\n"; exit(1);}
   for (auto it : line_inst_list) {
     s += std::to_string(it.second);
     s.append(" ");
@@ -106,7 +106,7 @@ void output_labels(std::unordered_map<std::string,int> label_inst_list, std::str
 {
   std::string s = "";
   std::ofstream ofs(path);
-  if (ofs.fail()) {std::cerr << "File " << path << "cannot be opened. Abort\n"; exit(1);}
+  if (ofs.fail()) {std::cerr << "File " << path << " cannot be opened. Abort\n"; exit(1);}
   for (auto it : label_inst_list) {
     s += it.first;
     s.append(" ");
@@ -144,8 +144,8 @@ std::vector<std::string> split(std::string s, std::string delimiter, bool shrink
 
 void test()
 {
-  std::string s = "fib.10:";
-  std::vector<std::string> v = split(s, ":", false); // 行の途中のコメントは削除
+  std::string s = "    #aaa";
+  std::vector<std::string> v = split(s, "#", false); // 行の途中のコメントは削除
   for (auto it : v) {
     std::cout << it << std::endl;
   }
