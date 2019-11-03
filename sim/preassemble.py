@@ -9,7 +9,7 @@ def gather(f):
     mappings = []  # list of (行番号, 命令番号)
     labels = []    # list of (ラベル, 行番号)
     l = 0  # line number
-    i = 0  # inst numbe
+    i = 0  # inst number
     for line in f:
         l += 1
         if line.strip()[0] == '#':
@@ -94,14 +94,14 @@ def halo16(lines, mappings, labels):
                 e = line.find(')', s + len('ha16('))
                 l = line[s + len('ha16('):e]
                 ninst = label_to_ninst(labels, mappings, l)
-                num = ninst & 0xff00
+                num = ninst & 0xf0
                 line = line[:s] + str(num) + line[e+1:]
             s = line.find('lo16(')
             if s != -1:
                 e = line.find(')', s + len('lo16('))
                 l = line[s + len('lo16('):e]
                 ninst = label_to_ninst(labels, mappings, l)
-                num = ninst & 0xff
+                num = ninst & 0x0f
                 line = line[:s] + str(num) + line[e+1:]
         ret.append(line)
     return ret
@@ -113,15 +113,29 @@ import sys
 
 if __name__ == '__main__':
     #print(len(sys.argv))
+    """
     if len(sys.argv) == 3:
         path = sys.argv[1]
         out = sys.argv[2]
-    with open(path) as f:
-        mappings, labels = gather(f)
+    """
+    labels = []
+    mappings = []
+    with open('label.txt') as f:
+        for line in f:
+            tmp = line[:-1].split(" ") # excluding '\n'
+            labels += [(tmp[0], int(tmp[1]))]
+    with open('inst.txt') as f:
+        for line in f:
+            tmp = line[:-1].split(" ") # excluding '\n'
+            mappings += [(int(tmp[0]), int(tmp[1]))]
+    #with open(path) as f:
+    #    mappings, labels = gather(f)
+    print(mappings)
+    print(labels)
     with open(path) as f:
         ret = subst_labels(mappings, labels, f)
         ret = halo16(ret, mappings, labels)
         with open(out, "w") as writer:
             writer.writelines(ret)
-    write_labels('label.txt', labels, mappings)
-    write_ninsts('inst.txt', mappings)
+    #write_labels('label.txt', labels, mappings)
+    #write_ninsts('inst.txt', mappings)

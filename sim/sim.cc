@@ -68,13 +68,13 @@ void init(void)
 void init_ofs(char *path)
 {
   ofs.open(path, std::ios::out | std::ios::trunc); // append はつけない
-  if (ofs.fail()) {std::cerr << "File '" << path << "' could not be opened\n"; exit(1);}
+  if (ofs.fail()) {std::cerr << "(ofs)File '" << path << "' could not be opened\n"; exit(1);}
 }
 
 void init_fin(char *path)
 {
   fin = fopen(path, "r");
-  if (!fin) {std::cerr << "File '" << path << "' could not be opened\n"; exit(1);}
+  if (!fin) {std::cerr << "(fin)File '" << path << "' could not be opened\n"; exit(1);}
 }
 
 void init_labels(char *path)
@@ -82,7 +82,7 @@ void init_labels(char *path)
   std::string label;
   int line = 0;
   std::ifstream ifs(path);
-  if (ifs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
+  if (ifs.fail()) {std::cerr << "(ifs)File '" << path << "' could not open\n"; exit(1);}
   while (!ifs.eof()) {
     ifs >> label >> line;
     labels.emplace(std::make_pair(label, line));

@@ -11,12 +11,13 @@ DIR_COMPILER=../compiler
 cd $DIR_COMPILER
 cd min-caml
 make min-caml
+cat MIPS/libmincaml.S >> test/$1.s
 make test/$1.s
 make test/$1.ans
 #vim test/$1.s
-cat test/$1.s libmincaml.S > ../../simulator/sim/mips_test.s
+cat test/$1.s > ../../simulator/sim/mips_test.s
 cd ../../simulator/sim/
-./test.sh mips_test.s foo.s
+./test.sh mips_test.s $2 $3
 
 echo "--- out.txt ---"
 cat out.txt
