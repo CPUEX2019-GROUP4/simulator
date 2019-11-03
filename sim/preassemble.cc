@@ -30,10 +30,10 @@ void gather(std::string path)
   while (1) {
     l++;
     if (!std::getline(ifs, s)) break;
-    s = split(s, "#", false)[0]; // 行の途中のコメントは削除
-    v = split(s, " ");
+    std::string ss = split(s, "#", false)[0]; // 行の途中のコメントは削除
+    v = split(ss, " ");
     if (v.empty()) continue;
-    if (!v[1].compare("")) {std::cout << "Empty\n"; continue;}
+    //if (!v[1].compare("")) {std::cout << "Empty\n"; continue;}
     s = v[0];
     v = split(s + "hoge\n", ":", false);
     if (v.size() > 1) label_inst_list.emplace(std::make_pair(v[0], i));
@@ -60,30 +60,25 @@ void subst_labels(std::string infile, std::string outfile)
   while (1) {
     l++;
     if (!std::getline(ifs, s)) break;
-    s = split(s, "#", false)[0]; // 行の途中のコメントは削除
-    v = split(s, " ");
-    if (v.empty()) {ofs << "#\n"; continue;}
+    std::string ss = split(s, "#", false)[0]; // 行の途中のコメントは削除
+    v = split(ss, " ");
+    if (v.empty()) {ofs << s << "\n"; continue;} // comment (?)
     std::vector<std::string> vv = split(s + "foo", ":", false);
-    if (vv.size() > 1) {ofs << "#\n"; continue;}
-    if (!s.compare("")) continue;
+    if (vv.size() > 1) {ofs << "###__" << s << "__\n"; continue;}
+    if (!s.compare("")) {std::cout << "nothing\n"; continue;}
 
     std::string opcode = v[0];
+    std::string str;
 
-    //if (l > 1500) break;
-
-    //std::cout << l << " :: " << s << std::endl;
-
-    if (!opcode.compare("jal")) ofs << opcode << " " << label_inst_list[v[1]] << "\n";
+    if (!opcode.compare("jal")) ofs << opcode << " " << label_inst_list[v[1]] << "\t\t\t# " << v[1] << "\n";
     else if (!opcode.compare("bc1f") || !opcode.compare("bc1t")) {
-      //int n = label_inst_list[v[1]];
       int n = label_inst_list[v[1]] - line_inst_list[l] - 1;
-      ofs << opcode << " " << std::to_string(n) << "\n";
+      ofs << opcode << " " << std::to_string(n) << "\t\t\t# " << v[1] << "\n";
     }
-    else if (!opcode.compare("j")) ofs << opcode << " " << label_inst_list[v[1]] << "\n";
+    else if (!opcode.compare("j")) ofs << opcode << " " << label_inst_list[v[1]] << "\t\t\t# " << v[1] << "\n";
     else if (!opcode.compare("bne") || !opcode.compare("beq")) {
-      //int n = line_inst_list[std::to_string(l)]
       int n = label_inst_list[v[3]] - line_inst_list[l] - 1;
-      ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\n";
+      ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\t\t\t# " << v[3] << "\n";
     }
     else if (!opcode.compare("mv")) ofs << "or " << v[1] << " r0 " << v[2] <<"\n";
     else if (!opcode.compare("subi")) ofs << "addi " << v[1] << " " << v[2]  << " -" << v[3] <<"\n";
@@ -95,7 +90,7 @@ void subst_labels(std::string infile, std::string outfile)
         std::string ss = split(vv[1], ")")[0];
         //std::cout << "ss " << ss << std::endl;
         int n = label_inst_list[ss] & 0xff00;
-        ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\n";
+        ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {
         std::cerr << "Too many halo16 in a line(" << l << ". Abort.\n"; exit(1);
@@ -109,7 +104,7 @@ void subst_labels(std::string infile, std::string outfile)
         std::string ss = split(vv[1], ")")[0];
         //std::cout << "ss " << ss << std::endl;
         int n = label_inst_list[ss] & 0x00ff;
-        ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\n";
+        ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {
         std::cerr << "Too many halo16 in a line(" << l << ". Abort.\n"; exit(1);
