@@ -17,7 +17,7 @@ make test/$1.ans
 #vim test/$1.s
 cat test/$1.s > ../../simulator/sim/mips_test.s
 cd ../../simulator/sim/
-./test.sh mips_test.s foo.s
+./test.sh mips_test.s foo.s $2
 
 echo "--- out.txt ---"
 cat out.txt
