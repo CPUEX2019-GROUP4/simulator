@@ -5,3 +5,5 @@ label.txt
 a.out
 mips_test.s
 *.big
+input.bin
+raytrace.s

@@ -13,7 +13,7 @@
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 40000
 #define N_REG 32
-#define SIZE_MEM (4<<20)
+#define SIZE_MEM (64<<20)
 
 #define $rd (int_reg[get_rd(inst)])
 #define $ra (int_reg[get_ra(inst)])
@@ -248,43 +248,43 @@ enum Comm exec_inst(uint32_t inst)
     case 0x00:      /* R type */
       switch (get_func(inst)) {
         case 0x20:      // add
-          sprintf(s, "add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra + $rb;
           pc++; break;
         case 0x22:      // sub
-          sprintf(s, "sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra - $rb;
           pc++; break;
         case 0x0c:      // div2
-          sprintf(s, "div2 r%d r%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) sprintf(s, "div2 r%d r%d\n", get_rd(inst), get_ra(inst));
           $rd = $ra > 1;
           pc++; break;
         case 0x1c:      // div10
-          sprintf(s, "div10 r%d r%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) sprintf(s, "div10 r%d r%d\n", get_rd(inst), get_ra(inst));
           $rd = $ra / 10;
           pc++; break;
         case 0x25:      // or
-          sprintf(s, "or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra | $rb;
           pc++; break;
         case 0x2a:      // slt
-          sprintf(s, "slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = ($ra < $rb)? 1: 0;
           pc++; break;
         case 0x04:      // sllv
-          sprintf(s, "sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra << $rb;
           pc++; break;
         case 0x00:      // sll
-          sprintf(s, "sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
+          if (!test_flag) sprintf(s, "sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
           $rd = $ra << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
-          sprintf(s, "jr r%d\n", get_rd(inst));
+          if (!test_flag) sprintf(s, "jr r%d\n", get_rd(inst));
           pc = $rd;
           break;
         case 0x0f:      // jalr
-          sprintf(s, "jalr r%d\n", get_rd(inst));
+          if (!test_flag) sprintf(s, "jalr r%d\n", get_rd(inst));
           int_reg[31] = pc + 1;
           pc = $rd;
           break;
@@ -301,41 +301,41 @@ enum Comm exec_inst(uint32_t inst)
     case 0x11:      /* floating point */
       switch (get_func(inst)) {
         case 0x10:      // fneg
-          sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = (-1) * $fa;
           pc++; break;
         case 0x00:      // fadd
-          sprintf(s, "fadd f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "fadd f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa + $fb;
           pc++; break;
         case 0x01:      // fsub
-          sprintf(s, "fsub f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "fsub f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa - $fb;
           pc++; break;
         case 0x02:      // fmul
-          sprintf(s, "fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa * $fb;
           pc++; break;
         case 0x03:      // fdiv
-          sprintf(s, "fdiv f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "fdiv f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa / $fb;
           pc++; break;
         case 0x20:      // fclt
-          sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
+          if (!test_flag) sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
           if ($fa < $fb) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x28:      // fcz
-          sprintf(s, "fcz f%d \n", get_ra(inst));
+          if (!test_flag) sprintf(s, "fcz f%d \n", get_ra(inst));
           if ($fa == 0.0) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x06:      // fmv
-          sprintf(s, "fmv f%d f%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) sprintf(s, "fmv f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = $fa;
           pc++; break;
         case 0x30:      // sqrt_init
-          sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = sqrt($fa) + 0.5;
           pc++; break;
         default:
@@ -349,87 +349,87 @@ enum Comm exec_inst(uint32_t inst)
       }
       break;
     case 0x08:      // addi
-      sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = $ra + get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
-      sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++; break;
     case 0x2b:      // sw
-      sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy(&mem[$ra + get_imm_signed(inst)], (char*)(&($rd)), 4);
       pc++; break;
     case 0x0f:      // lui
-      sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
       $rd = 0;
       $rd = (get_imm(inst) << 16);
       pc++; break;
     case 0x0d:      // ori
-      sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       $rd = $ra | get_imm(inst);
       pc++; break;
     case 0x0a:      // slti
-      sprintf(s, "slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = ($ra < get_imm_signed(inst))? 1: 0;
       pc++; break;
     case 0x04:      // beq
       reset_bold();
-      sprintf(s, "beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($rd == $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x05:      // bne
       reset_bold();
-      sprintf(s, "bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($rd != $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x02:      // j
       reset_bold();
-      sprintf(s, "j %d\n", get_addr(inst));
+      if (!test_flag) sprintf(s, "j %d\n", get_addr(inst));
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x03:      // jal
       reset_bold();
-      sprintf(s, "jal %d\n", get_addr(inst));
+      if (!test_flag) sprintf(s, "jal %d\n", get_addr(inst));
       int_reg[31] = pc + 1;
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x30:      // lwcZ
-      sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy((char*)(&($fd)), &mem[$ra + get_imm_signed(inst)], 4);
       pc++;
       break;
     case 0x38:      // swcZ
-      sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
       pc++;
       break;
     case 0x13:      // bc1t
       reset_bold();
-      sprintf(s, "bc1t %d\n", get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "bc1t %d\n", get_imm_signed(inst));
       if (fcond_reg&0x0002) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x15:      // bc1f
       reset_bold();
-      sprintf(s, "bc1f %d\n", get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "bc1f %d\n", get_imm_signed(inst));
       if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x1c:      // ftoi
-      sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
+      if (!test_flag) sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
       $rd = (int) $fa;
       pc++;
       break;
     case 0x1d:      // itof
-      sprintf(s, "itof f%d r%d\n", get_rd(inst), get_ra(inst));
+      if (!test_flag) sprintf(s, "itof f%d r%d\n", get_rd(inst), get_ra(inst));
       $fd = (float) $ra;
       pc++;
       break;
     case 0x3c:      // flui
-      sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
       {
         $fd = 0;
         uint16_t c = get_imm(inst);
@@ -438,7 +438,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x3d:      // fori
-      sprintf(s, "fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       {
         uint16_t tmp = (uint16_t)(((uint32_t)($fa) & 0x00ff)) | get_imm(inst);
         memcpy((char*)&($fd), (char*)&tmp, 2);
@@ -447,7 +447,7 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x3f:      // out
       reset_bold();
-      sprintf(s, "OUT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "OUT r%d %d\n", get_rd(inst), get_imm_signed(inst));
       {
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
         ofs << (char)val;
@@ -456,23 +456,23 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x18:      // inint
-      sprintf(s, "ININT r%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "ININT r%d %d\n", get_rd(inst), get_imm(inst));
       {
         int cc = fread((char*)&($rd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
       }
       pc++;
-      //break;
+      break;
       if (!test_flag) printf(s);
       return BREAK; // XXX
     case 0x19:      // inflt
-      sprintf(s, "INFLT f%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "INFLT f%d %d\n", get_rd(inst), get_imm(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
       }
       pc++;
-      //break;
+      break;
       if (!test_flag) printf(s);
       return BREAK; // XXX
     default:
