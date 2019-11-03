@@ -83,13 +83,14 @@ void subst_labels(std::string infile, std::string outfile)
     else if (!opcode.compare("mv")) ofs << "or " << v[1] << " r0 " << v[2] <<"\n";
     else if (!opcode.compare("subi")) ofs << "addi " << v[1] << " " << v[2]  << " -" << v[3] <<"\n";
     else if (!opcode.compare("lui")) {
-      //std::cout << "line " << l << " v[2] " << v[2] << std::endl;
       std::vector<std::string> vv = split(v[2], "ha16(", false);
       if (vv.size() == 1) ofs << s << std::endl;
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
-        //std::cout << "ss " << ss << std::endl;
-        int n = label_inst_list[ss] & 0xff00;
+        uint32_t n = (uint32_t)label_inst_list[ss] & 0xffff0000;
+        if (!ss.compare("solve_each_element.2890")) {
+          std::cout << "solve_each_element.2890 : " << n << std::endl;
+        }
         ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {
@@ -97,13 +98,11 @@ void subst_labels(std::string infile, std::string outfile)
       }
     }
     else if (!opcode.compare("ori")) {
-      //std::cout << "line " << l << " v[3] " << v[3] << std::endl;
       std::vector<std::string> vv = split(v[3], "lo16(", false);
       if (vv.size() == 1) ofs << s << std::endl;
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
-        //std::cout << "ss " << ss << std::endl;
-        int n = label_inst_list[ss] & 0x00ff;
+        uint32_t n = (uint32_t)label_inst_list[ss] & 0xffff;
         ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {
