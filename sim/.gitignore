@@ -1,9 +1,7 @@
-piyo.s
 inst.txt
 out.txt
 label.txt
 a.out
-mips_test.s
 *.big
 input.bin
-raytrace.s
+*.s
