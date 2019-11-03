@@ -462,15 +462,19 @@ enum Comm exec_inst(uint32_t inst)
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
       }
       pc++;
-      break;
+      //break;
+      if (!test_flag) printf(s);
+      return BREAK; // XXX
     case 0x19:      // inflt
-      sprintf(s, "INFLT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      sprintf(s, "INFLT f%d %d\n", get_rd(inst), get_imm_signed(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
       }
       pc++;
-      break;
+      //break;
+      if (!test_flag) printf(s);
+      return BREAK; // XXX
     default:
       reset_bold();
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
@@ -638,7 +642,10 @@ int main(int argc, char **argv)
       else if (comm == RUN) {
         while (1) {
           if (monitor()) break;
-          if (exec_inst() == NOP) break;
+          //if (exec_inst() == NOP) break;
+          Comm ret = exec_inst();
+          if (ret == NOP) break;
+          else if (ret == BREAK) break;
           if (breakpoint < 0) continue;
           else if (pc == (unsigned)breakpoint) break;
         }
