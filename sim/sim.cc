@@ -456,7 +456,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x18:      // inint
-      sprintf(s, "ININT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      sprintf(s, "ININT r%d %d\n", get_rd(inst), get_imm(inst));
       {
         int cc = fread((char*)&($rd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
@@ -466,7 +466,7 @@ enum Comm exec_inst(uint32_t inst)
       if (!test_flag) printf(s);
       return BREAK; // XXX
     case 0x19:      // inflt
-      sprintf(s, "INFLT f%d %d\n", get_rd(inst), get_imm_signed(inst));
+      sprintf(s, "INFLT f%d %d\n", get_rd(inst), get_imm(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
