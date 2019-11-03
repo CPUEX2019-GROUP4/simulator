@@ -75,8 +75,8 @@ void subst_labels(std::string infile, std::string outfile)
 
     if (!opcode.compare("jal")) ofs << opcode << " " << label_inst_list[v[1]] << "\n";
     else if (!opcode.compare("bc1f") || !opcode.compare("bc1t")) {
-      //int n = line_inst_list[std::to_string(l)]
-      int n = label_inst_list[v[1]];
+      //int n = label_inst_list[v[1]];
+      int n = label_inst_list[v[3]] - line_inst_list[l] - 1;
       ofs << opcode << " " << std::to_string(n) << "\n";
     }
     else if (!opcode.compare("j")) ofs << opcode << " " << label_inst_list[v[1]] << "\n";
