@@ -94,7 +94,7 @@ void subst_labels(std::string infile, std::string outfile)
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
         //std::cout << "ss " << ss << std::endl;
-        int n = label_inst_list[ss] & 0xf0;
+        int n = label_inst_list[ss] & 0xff00;
         ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\n";
       }
       else if (vv.size() > 2) {
@@ -108,7 +108,7 @@ void subst_labels(std::string infile, std::string outfile)
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
         //std::cout << "ss " << ss << std::endl;
-        int n = label_inst_list[ss] & 0x0f;
+        int n = label_inst_list[ss] & 0x00ff;
         ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\n";
       }
       else if (vv.size() > 2) {
