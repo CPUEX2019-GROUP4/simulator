@@ -68,6 +68,11 @@ void subst_labels(std::string infile, std::string outfile)
     if (!s.compare("")) continue;
 
     std::string opcode = v[0];
+
+    //if (l > 1500) break;
+
+    //std::cout << l << " :: " << s << std::endl;
+
     if (!opcode.compare("jal")) ofs << opcode << " " << label_inst_list[v[1]] << "\n";
     else if (!opcode.compare("bc1f") || !opcode.compare("bc1t")) {
       //int n = line_inst_list[std::to_string(l)]

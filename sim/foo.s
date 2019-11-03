@@ -1,10 +1,7 @@
-jal hoge
-add r0 r1 r2
-jal fuga
-# basic
-  # comm
-hoge:
-fuga:
-piyo:
-addi r1 r2 0
-nop
+fib:
+  ori r28 r0 4
+  slt r28 r28 r1
+  bne r0 r28 fib
+  jr r31
+end:
+  nop
