@@ -194,11 +194,11 @@ int main(int argc, char **argv)
     if (v.empty()) continue;
     //if (!v[0].compare(0, 1, "#")) continue;   // lines which starb with '#' are comments
 
-    //std::cout << "  | " << inst << " --> ";
+    std::cout << "  | " << inst << " --> ";
 
     uint32_t ret = assemble(v);
 
-    //std::cout << ret << std::endl;
+    std::cout << ret << std::endl;
 
     ofs.write((char*)(&ret), 4);
   }
