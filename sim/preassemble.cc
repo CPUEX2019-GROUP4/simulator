@@ -82,6 +82,34 @@ void subst_labels(std::string infile, std::string outfile)
     }
     else if (!opcode.compare("mv")) ofs << "or " << v[1] << " r0 " << v[2] <<"\n";
     else if (!opcode.compare("subi")) ofs << "addi " << v[1] << " " << v[2]  << " -" << v[3] <<"\n";
+    else if (!opcode.compare("lui")) {
+      //std::cout << "line " << l << " v[2] " << v[2] << std::endl;
+      std::vector<std::string> vv = split(v[2], "ha16(", false);
+      if (vv.size() == 1) ofs << s << std::endl;
+      else if (vv.size() == 2) {
+        std::string ss = split(vv[1], ")")[0];
+        //std::cout << "ss " << ss << std::endl;
+        int n = label_inst_list[ss] & 0xf0;
+        ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\n";
+      }
+      else if (vv.size() > 2) {
+        std::cerr << "Too many halo16 in a line(" << l << ". Abort.\n"; exit(1);
+      }
+    }
+    else if (!opcode.compare("ori")) {
+      //std::cout << "line " << l << " v[3] " << v[3] << std::endl;
+      std::vector<std::string> vv = split(v[3], "lo16(", false);
+      if (vv.size() == 1) ofs << s << std::endl;
+      else if (vv.size() == 2) {
+        std::string ss = split(vv[1], ")")[0];
+        //std::cout << "ss " << ss << std::endl;
+        int n = label_inst_list[ss] & 0x0f;
+        ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\n";
+      }
+      else if (vv.size() > 2) {
+        std::cerr << "Too many halo16 in a line(" << l << ". Abort.\n"; exit(1);
+      }
+    }
     else ofs << s << std::endl;
   }
   ifs.close();
@@ -145,7 +173,12 @@ std::vector<std::string> split(std::string s, std::string delimiter, bool shrink
 void test()
 {
   std::string s = "    #aaa";
-  std::vector<std::string> v = split(s, "#", false); // 行の途中のコメントは削除
+    s = split(s, "#", false)[0]; // 行の途中のコメントは削除
+    std::vector<std::string> v = split(s, " ");
+    if (v.empty()) {std::cout << "empty\n";}
+    std::vector<std::string> vv = split(s + "foo", ":", false);
+    if (vv.size() > 1) {std::cout << "vv " << vv.size() << std::endl;}
+    if (!s.compare("")) std::cout << "\"\"" << std::endl;
   for (auto it : v) {
     std::cout << it << std::endl;
   }

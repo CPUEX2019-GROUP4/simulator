@@ -94,14 +94,14 @@ def halo16(lines, mappings, labels):
                 e = line.find(')', s + len('ha16('))
                 l = line[s + len('ha16('):e]
                 ninst = label_to_ninst(labels, mappings, l)
-                num = ninst & 0xff00
+                num = ninst & 0xf0
                 line = line[:s] + str(num) + line[e+1:]
             s = line.find('lo16(')
             if s != -1:
                 e = line.find(')', s + len('lo16('))
                 l = line[s + len('lo16('):e]
                 ninst = label_to_ninst(labels, mappings, l)
-                num = ninst & 0xff
+                num = ninst & 0x0f
                 line = line[:s] + str(num) + line[e+1:]
         ret.append(line)
     return ret

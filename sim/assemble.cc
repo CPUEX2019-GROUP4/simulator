@@ -11,6 +11,8 @@
 #define $r(i) (std::stoi(v[i].substr(1)))
 #define $f(i) (std::stoi(v[i].substr(1)))
 
+std::vector<std::string> split(std::string s, std::string delimiter, bool shrink=true);
+
 uint32_t encode_r(int opcode, int func, int rd, int ra, int rb, int shift)
 {
   //printf("opcode: %d, rd: %d, ra: %d, rb: %d, shift: %d, func: %d\n", opcode,
@@ -126,6 +128,32 @@ uint32_t assemble(std::vector<std::string> v)
   return ret;
 }
 
+/**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
+std::vector<std::string> split(std::string s, std::string delimiter, bool shrink)
+{
+  std::vector<std::string> v;
+  std::string::size_type pos = 0;
+
+  if (!delimiter.compare("")) v.push_back(s);
+  else {
+    while (1) {
+      if (shrink) {
+        while (1) {
+          if (pos >= s.length()) break;
+          if (s.find(delimiter, pos) == pos) pos += delimiter.length();
+          else break;
+        }
+      }
+      if (pos >= s.length()) break;
+      std::string::size_type tmp = s.find(delimiter, pos);
+      if (tmp == std::string::npos) {v.push_back(s.substr(pos, tmp-pos)); break;}
+      v.push_back(s.substr(pos, tmp-pos));
+      pos = tmp + delimiter.length();
+    }
+  }
+  return v;
+}
+
 void print_help(char *program_name)
 {
   printf("USAGE: %s {{source}} {{destination}}\n"
@@ -161,13 +189,10 @@ int main(int argc, char **argv)
 
     // split input string by ' ' and save them to a vector v
     std::vector<std::string> v;
-    std::stringstream ss{inst};
-    std::string buf;
-    while (std::getline(ss, buf, ' ')) {
-      if (!buf.compare("")) continue;
-      v.push_back(buf);
-    }
-    if (!v[0].compare(0, 1, "#")) continue;   // lines which starb with '#' are comments
+    inst = split(inst, "#", false)[0];
+    v = split(inst, " ");
+    if (v.empty()) continue;
+    //if (!v[0].compare(0, 1, "#")) continue;   // lines which starb with '#' are comments
 
     std::cout << "  | " << inst << " --> ";
 
