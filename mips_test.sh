@@ -16,7 +16,7 @@ make test/$1.ans
 #vim test/$1.s
 cat test/$1.s libmincaml.S > ../../simulator/sim/mips_test.s
 cd ../../simulator/sim/
-./test.sh mips_test.s $@
+./test.sh mips_test.s foo.s
 
 echo "--- out.txt ---"
 cat out.txt

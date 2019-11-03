@@ -11,7 +11,7 @@
 #include <cmath>
 
 #define BYTES_INSTRUCTION 32
-#define LEN_INSTRUCTION 10000
+#define LEN_INSTRUCTION 40000
 #define N_REG 32
 #define SIZE_MEM (4<<20)
 
