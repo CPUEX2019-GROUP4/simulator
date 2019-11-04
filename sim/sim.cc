@@ -460,6 +460,7 @@ enum Comm exec_inst(uint32_t inst)
       {
         int cc = fread((char*)&($rd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
+        printf("input value: %d\n", ($rd));
       }
       pc++;
       break;
@@ -470,6 +471,7 @@ enum Comm exec_inst(uint32_t inst)
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
+        printf("input value: %f\n", ($fd));
       }
       pc++;
       break;

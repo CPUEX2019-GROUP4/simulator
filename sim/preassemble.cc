@@ -56,26 +56,25 @@ void subst_labels(std::string infile, std::string outfile)
   std::string s;
   std::vector<std::string> v;
 
-  int l = 0;
+  int l = 0;  // line number
   while (1) {
     l++;
     if (!std::getline(ifs, s)) break;
     std::string ss = split(s, "#", false)[0]; // 行の途中のコメントは削除
     v = split(ss, " ");
-    if (v.empty()) {ofs << s << "\n"; continue;} // comment (?)
+    if (v.empty()) {ofs << s << "\n"; continue;} // comment
     std::vector<std::string> vv = split(s + "foo", ":", false);
-    if (vv.size() > 1) {ofs << "###__" << s << "__\n"; continue;}
+    if (vv.size() > 1) {ofs << "###__" << s << "__\n"; continue;} // label declaration
     if (!s.compare("")) {std::cout << "nothing\n"; continue;}
 
     std::string opcode = v[0];
     std::string str;
 
-    if (!opcode.compare("jal")) ofs << opcode << " " << label_inst_list[v[1]] << "\t\t\t# " << v[1] << "\n";
+    if (!opcode.compare("jal") || !opcode.compare("j")) ofs << opcode << " " << label_inst_list[v[1]] << "\t\t\t# " << v[1] << "\n";
     else if (!opcode.compare("bc1f") || !opcode.compare("bc1t")) {
       int n = label_inst_list[v[1]] - line_inst_list[l] - 1;
       ofs << opcode << " " << std::to_string(n) << "\t\t\t# " << v[1] << "\n";
     }
-    else if (!opcode.compare("j")) ofs << opcode << " " << label_inst_list[v[1]] << "\t\t\t# " << v[1] << "\n";
     else if (!opcode.compare("bne") || !opcode.compare("beq")) {
       int n = label_inst_list[v[3]] - line_inst_list[l] - 1;
       ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\t\t\t# " << v[3] << "\n";
@@ -84,22 +83,19 @@ void subst_labels(std::string infile, std::string outfile)
     else if (!opcode.compare("subi")) ofs << "addi " << v[1] << " " << v[2]  << " -" << v[3] <<"\n";
     else if (!opcode.compare("lui")) {
       std::vector<std::string> vv = split(v[2], "ha16(", false);
-      if (vv.size() == 1) ofs << s << std::endl;
+      if (vv.size() == 1) ofs << s << std::endl;  // line without ha16
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
         uint32_t n = (uint32_t)label_inst_list[ss] & 0xffff0000;
-        if (!ss.compare("solve_each_element.2890")) {
-          std::cout << "solve_each_element.2890 : " << n << std::endl;
-        }
         ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {
-        std::cerr << "Too many halo16 in a line(" << l << ". Abort.\n"; exit(1);
+        std::cerr << "Too many halo16 in a line(" << l << ". Abort.\n"; exit(1);  // unexpected
       }
     }
     else if (!opcode.compare("ori")) {
       std::vector<std::string> vv = split(v[3], "lo16(", false);
-      if (vv.size() == 1) ofs << s << std::endl;
+      if (vv.size() == 1) ofs << s << std::endl;  // line without lo16
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
         uint32_t n = (uint32_t)label_inst_list[ss] & 0xffff;

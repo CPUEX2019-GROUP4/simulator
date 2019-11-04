@@ -77,7 +77,6 @@ uint32_t assemble(std::vector<std::string> v)
   if (!op.compare("add")) ret = encode_r(0x00, 0x20, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("sub")) ret = encode_r(0x00, 0x22, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("addi")) ret = encode_i(0x08, $r(1), $r(2), $(3));
-  //else if (!op.compare("subi")) ret = encode_i(0x18, $r(1), $r(2), $(3)); // subi
   else if (!op.compare("div2")) ret = encode_r(0x00, 0x0c, $r(1), $r(2), 0x00, 0x00);
   else if (!op.compare("div10")) ret = encode_r(0x00, 0x1c, $r(1), $r(2), 0x00, 0x00);
   // Load/Store
@@ -187,12 +186,10 @@ int main(int argc, char **argv)
     getline(ifs, inst);
     if (!inst.compare("")) break;
 
-    // split input string by ' ' and save them to a vector v
     std::vector<std::string> v;
     inst = split(inst, "#", false)[0];
     v = split(inst, " ");
     if (v.empty()) continue;
-    //if (!v[0].compare(0, 1, "#")) continue;   // lines which starb with '#' are comments
 
     //std::cout << "  | " << inst << " --> ";
 
