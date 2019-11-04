@@ -107,15 +107,15 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("fclt")) ret = encode_r(0x11, 0x20, 0x00, $f(1), $f(2), 0x00);
   else if (!op.compare("fcz")) ret = encode_r(0x11, 0x28, 0x00, $f(1), 0x00, 0x00);
   else if (!op.compare("fmv")) ret = encode_r(0x11, 0x06, $f(1), $f(2), 0x00, 0x00);
+  else if (!op.compare("sqrt_init")) ret = encode_r(0x11, 0x30, $f(1), $f(2), 0x00, 0x00);
   else if (!op.compare("lwcZ")) ret = encode_i(0x30, $f(1), $r(2), $(3));
   else if (!op.compare("swcZ")) ret = encode_i(0x38, $f(1), $r(2), $(3));
-  else if (!op.compare("bc1t")) ret = encode_i(0x13, 0x08, 0x01, $(1));
+  else if (!op.compare("bc1t")) ret = encode_i(0x13, 0x08, 0x01, $(1)); // XXX
   else if (!op.compare("bc1f")) ret = encode_i(0x15, 0x08, 0x00, $(1));
   else if (!op.compare("ftoi")) ret = encode_i(0x1c, $r(1), $f(2), 0x00);
   else if (!op.compare("itof")) ret = encode_i(0x1d, $f(1), $r(2), 0x00);
   else if (!op.compare("flui")) ret = encode_i(0x3c, $f(1), 0x00, $(2));
   else if (!op.compare("fori")) ret = encode_i(0x3d, $f(1), $f(2), $(3));
-  else if (!op.compare("sqrt_init")) ret = encode_r(0x11, 0x30, $f(1), $f(2), 0x00, 0x00);
   // Others
   else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00, 0x00); // nop
   else if (!op.compare("out")) ret = encode_i(0x3f, $r(1), 0x00, $(2));

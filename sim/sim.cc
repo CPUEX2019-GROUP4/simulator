@@ -257,7 +257,7 @@ enum Comm exec_inst(uint32_t inst)
           pc++; break;
         case 0x0c:      // div2
           if (!test_flag) sprintf(s, "div2 r%d r%d\n", get_rd(inst), get_ra(inst));
-          $rd = $ra > 1;
+          $rd = $ra >> 1;
           pc++; break;
         case 0x1c:      // div10
           if (!test_flag) sprintf(s, "div10 r%d r%d\n", get_rd(inst), get_ra(inst));
@@ -453,7 +453,7 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x3f:      // out
       reset_bold();
-      if (!test_flag) sprintf(s, "OUT r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "out r%d %d\n", get_rd(inst), get_imm_signed(inst));
       {
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
         ofs << (char)val;
@@ -462,7 +462,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x18:      // inint
-      if (!test_flag) sprintf(s, "ININT r%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "inint r%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($rd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
@@ -473,7 +473,7 @@ enum Comm exec_inst(uint32_t inst)
       if (!test_flag) printf(s);
       return BREAK; // XXX
     case 0x19:      // inflt
-      if (!test_flag) sprintf(s, "INFLT f%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) sprintf(s, "INFLT f%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
