@@ -337,14 +337,13 @@ enum Comm exec_inst(uint32_t inst)
         case 0x30:      // sqrt_init
           if (!test_flag) sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
           {
-            /*
             uint32_t s_ = 0, e_ = 0;
-            s_ = (uint32_t)($fa) & 0x80000000;
-            e_ = (uint32_t)($fa) & 0x7f800000;
-            e_ = e_ >> 1; e_ += 64 << 23;
-            $fd = (float)(s_ | e_);
-            */
-            $fd = sqrt($fa) + 0.5;
+            memcpy((char*)&e_, (char*)&($fa), 4);
+            s_ = e_ & 0x80000000;
+            e_ = e_ & 0x7f800000;
+            e_ = (e_ >> 1) + (64 << 23);
+            e_ = s_ | e_;
+            memcpy((char*)&($fd), (char*)$e_, 4);
           }
           pc++; break;
         default:
