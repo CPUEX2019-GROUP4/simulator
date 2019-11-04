@@ -6,7 +6,7 @@ if [ $# -lt 2 ] || [ $# -gt 3 ]; then
   exit 1
 fi
 
-DIR_COMPILER=../compiler
+DIR_COMPILER=../../compiler
 
 cd $DIR_COMPILER
 cd min-caml
@@ -15,8 +15,8 @@ cat MIPS/libmincaml.S >> test/$1.s
 make test/$1.s
 make test/$1.ans
 #vim test/$1.s
-cat test/$1.s > ../../simulator/sim/mips_test.s
-cd ../../simulator/sim/
+cat test/$1.s > ../../simulator/simulator/sim/mips_test.s
+cd ../../simulator/simulator/sim/
 ./test.sh mips_test.s $2 $3
 
 echo "--- out.txt ---"
@@ -24,5 +24,5 @@ cat out.txt
 echo ""
 
 echo "--- answer ---"
-cat ../$DIR_COMPILER/min-caml/test/$1.ans
+cat ../../$DIR_COMPILER/min-caml/test/$1.ans
 echo ""

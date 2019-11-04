@@ -336,7 +336,13 @@ enum Comm exec_inst(uint32_t inst)
           pc++; break;
         case 0x30:      // sqrt_init
           if (!test_flag) sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
-          $fd = sqrt($fa) + 0.5;
+          {
+            uint32_t s_ = 0, e_ = 0;
+            s_ = (uint32_t)($fa) & 0x80000000;
+            e_ = (uint32_t)($fa) & 0x7f800000;
+            e_ = e_ >> 1; e_ += 64 << 23;
+            $fd = (float)(s_ | e_);
+          }
           pc++; break;
         default:
           reset_bold();
