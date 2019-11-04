@@ -1,4 +1,5 @@
-make clean
-rm a.out piyo.s label.txt inst.txt out.txt mips_test.s
+#!/bin/sh
+
+./clean.sh
 git add -A
 git commit

@@ -33,7 +33,7 @@ void gather(std::string path)
     std::string ss = split(s, "#", false)[0]; // 行の途中のコメントは削除
     v = split(ss, " ");
     if (v.empty()) continue;
-    if (!v[1].compare("")) {std::cout << "Empty\n"; continue;}
+    if (!v[1].compare("")) {std::cout << "Empty (" << l << "): " << s << "\n"; continue;}
     s = v[0];
     v = split(s + "hoge\n", ":", false);
     if (v.size() > 1) label_inst_list.emplace(std::make_pair(v[0], i));
