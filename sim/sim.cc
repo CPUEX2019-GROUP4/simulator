@@ -466,23 +466,17 @@ enum Comm exec_inst(uint32_t inst)
       {
         int cc = fread((char*)&($rd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
-        printf("input value: %d\n", ($rd));
       }
       pc++;
       break;
-      if (!test_flag) printf(s);
-      return BREAK; // XXX
     case 0x19:      // inflt
       if (!test_flag) sprintf(s, "INFLT f%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
-        printf("input value: %f\n", ($fd));
       }
       pc++;
       break;
-      if (!test_flag) printf(s);
-      return BREAK; // XXX
     default:
       reset_bold();
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
