@@ -58,6 +58,16 @@ std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニター
 std::ofstream ofs;                // OUT 命令の出力ファイル
 int test_flag;                    // 出力のみ行うモード
 FILE *fin;                // IN 命令のファイル
+long total_executed = 0;          // 実行された総演算命令数
+
+union bits {
+  float f;
+  uint32_t ui32;
+  struct {
+    uint16_t lo;
+    uint16_t hi;
+  } lohi;
+} b;
 
 void init(void)
 {
@@ -222,8 +232,8 @@ uint32_t get_rb(uint32_t inst) {return (inst >> 11) & 0x1f;}
 uint32_t get_shift(uint32_t inst) {return (inst >> 6) & 0x1f;}
 int32_t get_shift_signed(uint32_t inst) {return (inst & 0x3ff) - (inst & 0x400);}
 uint32_t get_func(uint32_t inst) {return (inst >> 0) & 0x3f;}
-uint32_t get_imm(uint32_t inst) {return (inst >> 0) & 0xffff;}
-int32_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);}
+uint16_t get_imm(uint32_t inst) {return (inst >> 0) & 0xffff;}
+int16_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);}
 uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 
 /** execute single instruction */
@@ -240,6 +250,8 @@ enum Comm exec_inst(void)
 /** execute single instruction */
 enum Comm exec_inst(uint32_t inst)
 {
+  total_executed++;
+
   if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
   char s[256];
@@ -337,14 +349,13 @@ enum Comm exec_inst(uint32_t inst)
         case 0x30:      // sqrt_init
           if (!test_flag) sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
           {
-            uint32_t s_ = 0;
-            uint32_t e_ = 0;
-            memcpy((char*)&e_, (char*)&($fa), 4);
-            s_ = e_ & 0x80000000;
-            e_ = e_ & 0x7f800000;
+            uint32_t s_, e_;
+            b.f = $fa;
+            s_ = b.ui32 & 0x80000000;
+            e_ = b.ui32 & 0x7f800000;
             e_ = (e_ >> 1) + (64 << 23);
-            e_ = s_ | e_;
-            memcpy((char*)&($fd), (char*)&e_, 4);
+            b.ui32 = s_ | e_;
+            $fd = b.f;
           }
           pc++; break;
         default:
@@ -371,8 +382,9 @@ enum Comm exec_inst(uint32_t inst)
       pc++; break;
     case 0x0f:      // lui
       if (!test_flag) sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
-      $rd = 0;
-      $rd = (get_imm(inst) << 16);
+      b.lohi.hi = get_imm(inst);
+      b.lohi.lo = 0;
+      $rd = b.ui32;
       pc++; break;
     case 0x0d:      // ori
       if (!test_flag) sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
@@ -429,7 +441,7 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x1c:      // ftoi
       if (!test_flag) sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
-      $rd = (int) $fa;
+      $rd = (int) round($fa);
       pc++;
       break;
     case 0x1d:      // itof
@@ -439,19 +451,15 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x3c:      // flui
       if (!test_flag) sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
-      {
-        $fd = 0;
-        uint16_t c = get_imm(inst);
-        memcpy((char*)(&($fd))+2, (char*)&c, 2);
-      }
+      b.lohi.hi = get_imm(inst);
+      $fd = b.f;
       pc++;
       break;
     case 0x3d:      // fori
       if (!test_flag) sprintf(s, "fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
-      {
-        uint16_t tmp = (uint16_t)(((uint32_t)($fa) & 0x00ff)) | get_imm(inst);
-        memcpy((char*)&($fd), (char*)&tmp, 2);
-      }
+      b.f = $fa;
+      b.lohi.lo |= get_imm(inst);
+      $fd = b.f;
       pc++;
       break;
     case 0x3f:      // out
@@ -460,7 +468,6 @@ enum Comm exec_inst(uint32_t inst)
       {
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
         ofs << (char)val;
-        //ofs.flush();
       }
       pc++;
       break;
@@ -473,7 +480,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x19:      // inflt
-      if (!test_flag) sprintf(s, "INFLT f%d\n", get_rd(inst));
+      if (!test_flag) sprintf(s, "inflt f%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
@@ -647,7 +654,6 @@ int main(int argc, char **argv)
       else if (comm == RUN) {
         while (1) {
           if (monitor()) break;
-          //if (exec_inst() == NOP) break;
           Comm ret = exec_inst();
           if (ret == NOP) break;
           else if (ret == BREAK) break;
@@ -663,6 +669,8 @@ int main(int argc, char **argv)
   }
 
   puts("\nsimulator terminated");
+  double tmp = (float)total_executed;
+  printf("total executed instructions: %.2e\n", tmp);
 
   free(inst_reg);
 
