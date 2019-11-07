@@ -70,13 +70,13 @@ void subst_labels(std::string infile, std::string outfile)
     std::string opcode = v[0];
     std::string str;
 
-    if (!opcode.compare("jal") || !opcode.compare("j")) ofs << opcode << " " << label_inst_list[v[1]] << "\t\t\t# " << v[1] << "\n";
+    if (!opcode.compare("jal") || !opcode.compare("j")) ofs << opcode << " " << label_inst_list.at(v[1]) << "\t\t\t# " << v[1] << "\n";
     else if (!opcode.compare("bc1f") || !opcode.compare("bc1t")) {
-      int n = label_inst_list[v[1]] - line_inst_list[l] - 1;
+      int n = label_inst_list.at(v[1]) - line_inst_list[l] - 1;
       ofs << opcode << " " << std::to_string(n) << "\t\t\t# " << v[1] << "\n";
     }
     else if (!opcode.compare("bne") || !opcode.compare("beq")) {
-      int n = label_inst_list[v[3]] - line_inst_list[l] - 1;
+      int n = label_inst_list.at(v[3]) - line_inst_list[l] - 1;
       ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\t\t\t# " << v[3] << "\n";
     }
     else if (!opcode.compare("mv")) ofs << "or " << v[1] << " r0 " << v[2] <<"\n";
@@ -86,7 +86,7 @@ void subst_labels(std::string infile, std::string outfile)
       if (vv.size() == 1) ofs << s << std::endl;  // line without ha16
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
-        uint32_t n = (uint32_t)label_inst_list[ss] & 0xffff0000;
+        uint32_t n = (uint32_t)label_inst_list.at(ss) & 0xffff0000;
         ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {
@@ -98,7 +98,7 @@ void subst_labels(std::string infile, std::string outfile)
       if (vv.size() == 1) ofs << s << std::endl;  // line without lo16
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
-        uint32_t n = (uint32_t)label_inst_list[ss] & 0xffff;
+        uint32_t n = (uint32_t)label_inst_list.at(ss) & 0xffff;
         ofs << opcode << " " << v[1] << " " << v[2] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {

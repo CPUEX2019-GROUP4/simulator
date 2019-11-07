@@ -452,6 +452,7 @@ enum Comm exec_inst(uint32_t inst)
     case 0x3c:      // flui
       if (!test_flag) sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
       b.lohi.hi = get_imm(inst);
+      b.lohi.lo = 0;
       $fd = b.f;
       pc++;
       break;
