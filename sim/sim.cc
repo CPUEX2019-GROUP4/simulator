@@ -441,7 +441,7 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x1c:      // ftoi
       if (!test_flag) sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
-      $rd = (int) round($fa);
+      $rd = (int) ($fa);
       pc++;
       break;
     case 0x1d:      // itof

@@ -290,7 +290,7 @@ int main(int argc, char **argv)
         else pc++;
         break;
       case 0x1c:      // ftoi
-        $rd = (int) round($fa);
+        $rd = (int) ($fa);
         pc++;
         break;
       case 0x1d:      // itof
