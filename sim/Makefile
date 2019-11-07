@@ -1,9 +1,12 @@
 CC = g++
 LDFLAGS = -Wall -O2
 
-all: sim swap assemble preassemble
+all: sim run swap assemble preassemble
 
 sim: sim.cc
+	$(CC) $(LDFLAGS) $< -o $@
+
+run: run.cc
 	$(CC) $(LDFLAGS) $< -o $@
 
 preassemble: preassemble.cc
@@ -16,4 +19,4 @@ assemble: assemble.cc
 	$(CC) $(LDFLAGS) $< -o $@
 
 clean:
-	rm sim swap assemble preassemble
+	rm sim run swap assemble preassemble

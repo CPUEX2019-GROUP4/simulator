@@ -3,6 +3,7 @@
 intermediate=piyo.s
 binary=a.out
 test_flag=0
+exe=./sim
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
   echo "USAGE: $0 {{input_assembly}} {{input_file}} {{test_flag}}" 1>&2
@@ -12,11 +13,11 @@ fi
 
 if [ $# = 3 ]; then
   if [ $3 = "true" ] || [ $3 = "1" ]; then
-    test_flag=1
+    exe=./run
   fi
 fi
 
 make &&
 time -p {
-./preassemble $1 $intermediate && ./assemble $intermediate $binary && ./sim $binary label.txt inst.txt out.txt $test_flag $2
+./preassemble $1 $intermediate && ./assemble $intermediate $binary && $exe $binary label.txt inst.txt out.txt $test_flag $2
 }
