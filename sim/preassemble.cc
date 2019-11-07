@@ -185,16 +185,18 @@ int main(int argc, char **argv)
   std::string in = "foo.s";
   std::string out = "piyo.s";
 
+  std::cout << "------------------------------\n";
+
   if (argc >= 2) in = argv[1];
   if (argc == 3) out = argv[2];
   if (argc > 3) {std::cerr << "USAGE: " << argv[0] << "{{in_file}} {{preassembled_file}}\n"; exit(1);}
 
-  std::cout << in << " ==> " << out << std::endl;
   gather(in);
   output_inst(line_inst_list);
   output_labels(label_inst_list);
   subst_labels(in, out);
-  //test();
+  std::cout << "Preassembled successfully.\n";
+  std::cout << in << " ==> " << out << std::endl;
 
   return 0;
 }

@@ -175,10 +175,10 @@ int main(int argc, char **argv)
     ofs.open("a.out", std::ios::out|std::ios::binary|std::ios::trunc);
   }
 
-  puts(" -------------------------------");
-
   if (ifs.fail()) {std::cerr << "failed to open " << argv[1] << "\n"; exit(1);}
   if (ofs.fail()) {std::cerr << "failed to open " << argv[2] << "\n"; exit(1);}
+
+  std::cout << "------------------------------\n";
 
   std::string inst;
 
@@ -191,11 +191,7 @@ int main(int argc, char **argv)
     v = split(inst, " ");
     if (v.empty()) continue;
 
-    //std::cout << "  | " << inst << " --> ";
-
     uint32_t ret = assemble(v);
-
-    //std::cout << ret << std::endl;
 
     ofs.write((char*)(&ret), 4);
   }
@@ -203,8 +199,8 @@ int main(int argc, char **argv)
   ifs.close();
   ofs.close();
 
-  puts(" -------------------------------");
   printf("Assembled successfully.\n");
+  printf("%s ==> %s\n", argv[1], argv[2]);
 
   return 0;
 }

@@ -22,20 +22,6 @@
 #define $fa (float_reg[get_ra(inst)])
 #define $fb (float_reg[get_rb(inst)])
 
-enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
-
-// Parameters
-const char PROMPT[] = ">> ";
-int auto_display_registers = 0;
-
-// Prototypes
-void show_help(void);
-void print_regs(void);
-void init_inst(char *pathname);
-enum Comm exec_inst(uint32_t);
-enum Comm exec_inst(void);
-enum Comm analyze_commands(std::string);
-
 // registers
 uint32_t *inst_reg;           // instruction register
 uint32_t pc = 0;                   // program counter
@@ -45,18 +31,11 @@ std::array<char, SIZE_MEM> mem;           // memory
 int32_t fcond_reg;
 
 // Meta variables
-std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
-std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 uint32_t total_inst = 0;
-int dest_reg;                     // 各命令のdestination_register
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
 std::unordered_map<int,int> rev_ninsts;  // ↑の逆
 std::unordered_map<std::string,int> labels;  // ラベルに対するソースコード行番号のmap
-int breakpoint;                   // breakpointの命令番号
-std::unordered_map<int,int> regs_to_monitor;    // モニターするレジスタたち
-std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
 std::ofstream ofs;                // OUT 命令の出力ファイル
-int test_flag;                    // 出力のみ行うモード
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 
@@ -69,19 +48,13 @@ union bits {
   } lohi;
 } b;
 
-inline void init(void)
-{
-  breakpoint = -1;
-  dest_reg = -1;
-}
-
-void init_ofs(char *path)
+inline void init_ofs(char *path)
 {
   ofs.open(path, std::ios::out | std::ios::trunc); // append はつけない
   if (ofs.fail()) {std::cerr << "(ofs)File '" << path << "' could not be opened\n"; exit(1);}
 }
 
-void init_fin(char *path)
+inline void init_fin(char *path)
 {
   fin = fopen(path, "r");
   if (!fin) {std::cerr << "(fin)File '" << path << "' could not be opened\n"; exit(1);}
@@ -110,33 +83,6 @@ void init_ninsts(char *path)
     ninsts.emplace(std::make_pair(inst, line));
     rev_ninsts.emplace(std::make_pair(line, inst));
   }
-}
-
-/**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
-std::vector<std::string> split(std::string s, std::string delimiter, bool shrink=true)
-{
-  std::vector<std::string> v;
-  std::string::size_type pos = 0;
-
-  if (!delimiter.compare("")) v.push_back(s);
-  else {
-    while (1) {
-      if (shrink) {
-        while (1) {
-          if (pos >= s.length()) break;
-          if (s.find(delimiter, pos) == pos) pos += delimiter.length();
-          else break;
-        }
-      }
-      if (pos >= s.length()) break;
-      std::string::size_type tmp = s.find(delimiter, pos);
-      //if (tmp == std::string::npos) break;
-      if (tmp == std::string::npos) {v.push_back(s.substr(pos, tmp-pos)); break;}
-      v.push_back(s.substr(pos, tmp-pos));
-      pos = tmp + delimiter.length();
-    }
-  }
-  return v;
 }
 
 /**--- read instructions from a file and save them to inst_reg ---*/
@@ -175,17 +121,18 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  if (!strcmp(argv[5], "1") || !strcmp(argv[5], "test") || !strcmp(argv[5], "true")) {
-    test_flag = 1;
-  }
-
-  init();
+  std::cout << "------------------------------\n";
+  puts("Running simulator...");
 
   init_inst(argv[1]);
   init_labels(argv[2]);
   init_ninsts(argv[3]);
-  init_ofs(argv[4]);
-  init_fin(argv[6]);
+  //init_ofs(argv[4]);
+  ofs.open(argv[4], std::ios::out | std::ios::trunc); // append はつけない
+  if (ofs.fail()) {std::cerr << "(ofs)File '" << argv[4] << "' could not be opened\n"; exit(1);}
+  //init_fin(argv[6]);
+  fin = fopen(argv[6], "r");
+  if (!fin) {std::cerr << "(fin)File '" << argv[6] << "' could not be opened\n"; exit(1);}
 
   puts("run only mode!!");
 

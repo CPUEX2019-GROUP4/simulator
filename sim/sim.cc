@@ -630,6 +630,9 @@ int main(int argc, char **argv)
     test_flag = 1;
   }
 
+  std::cout << "------------------------------\n";
+  puts("Running simulator...");
+
   init();
 
   init_inst(argv[1]);
