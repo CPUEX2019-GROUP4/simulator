@@ -9,6 +9,8 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <iomanip>
+#include <locale>
 
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 40000
@@ -69,6 +71,15 @@ union bits {
     uint16_t hi;
   } lohi;
 } b;
+
+template<class T>
+std::string FormatWithCommas(T value)
+{
+  std::stringstream ss;
+  ss.imbue(std::locale(""));
+  ss << std::fixed << value;
+  return ss.str();
+}
 
 void init(void)
 {
@@ -604,7 +615,20 @@ enum Comm analyze_commands(std::string s)
     return HELP;
   }
   else if (comm == "run" || comm == "r") {    // run
-    return RUN;
+    if (v.size() == 1) return RUN;
+    else if (v.size() == 2) {                 // XXX: returnせず実行しちゃう(妥協)
+      long count = std::stol(v[1]);
+      while (count-- > 0) {
+        if (monitor()) break;
+        Comm ret = exec_inst();
+        if (ret == NOP) break;
+        else if (ret == BREAK) break;
+        if (breakpoint < 0) continue;
+        else if (pc == (unsigned)breakpoint) break;
+      }
+      return NIL;
+    }
+    else {printf("USAGE: run {{max_count_of_silent_execution}}\n"); return NIL;}
   }
   else {
     std::cerr << "Unknown command: " << s << std::endl;
@@ -647,37 +671,44 @@ int main(int argc, char **argv)
   show_help();
   putchar('\n');
 
-  if (test_flag) test();
-  else {
-    std::string s;
-    while (1) {
-      printf("%s", PROMPT);
-      if (!std::getline(std::cin, s)) break;
-      enum Comm comm = analyze_commands(s);
-      if (comm == NIL) continue;
-      else if (comm == QUIT) break;
-      else if (comm == ERR) continue;
-      else if (comm == STEP) exec_inst();
-      else if (comm == RUN) {
-        while (1) {
-          if (monitor()) break;
-          Comm ret = exec_inst();
-          if (ret == NOP) break;
-          else if (ret == BREAK) break;
-          if (breakpoint < 0) continue;
-          else if (pc == (unsigned)breakpoint) break;
+  try {
+    if (test_flag) test();
+    else {
+      std::string s;
+      while (1) {
+        printf("%s", PROMPT);
+        if (!std::getline(std::cin, s)) break;
+        enum Comm comm = analyze_commands(s);
+        if (comm == NIL) continue;
+        else if (comm == QUIT) break;
+        else if (comm == ERR) continue;
+        else if (comm == STEP) exec_inst();
+        else if (comm == RUN) {
+          while (1) {
+            if (monitor()) break;
+            Comm ret = exec_inst();
+            if (ret == NOP) break;
+            else if (ret == BREAK) break;
+            if (breakpoint < 0) continue;
+            else if (pc == (unsigned)breakpoint) break;
+          }
         }
+        else if (comm == UNBREAK) {breakpoint = -1; continue;}
+        else ;
+        print_regs();
+        reset_bold();
       }
-      else if (comm == UNBREAK) {breakpoint = -1; continue;}
-      else ;
-      print_regs();
-      reset_bold();
     }
+  }
+  catch (const std::out_of_range& e) {  // memory range (most likely)
+    std::cerr << e.what() << std::endl;
+    std::string s = FormatWithCommas(total_executed);
+    std::cerr << "died at " << s << "th instruction of pc: " << pc << "\n";
+    exit(1);
   }
 
   puts("\nsimulator terminated");
-  double tmp = (float)total_executed;
-  printf("total executed instructions: %.2e\n", tmp);
+  std::cout <<"total executed instructions: " << FormatWithCommas(total_inst) << std::endl;
   printf("max sp(r29): %ld, max hp(r31): %ld\n", r29_max, r31_max);
 
   free(inst_reg);
