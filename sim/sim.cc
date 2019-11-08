@@ -141,23 +141,27 @@ void show_help(void)
 {
   puts("available commands.");
   puts("-------------------");
-  printf("step (s): \t\t\texecute the current instruction of the binary.\n");
+  printf("at (a): \t\t\tprints the current pc and line.\n");
   putchar('\n');
-  printf("monitor (m) {{rn}}: \t\tstop when the value of the register changes.\n");
+  printf("step (s): \t\t\texecutes the current instruction of the binary.\n");
   putchar('\n');
-  printf("unmonitor (um) {{rn}}: \t\tremove the register from monitoring list.\n");
+  printf("monitor (m) {{rn}}: \t\thalts when the value of the register changes.\n");
   putchar('\n');
-  printf("print (p) {{rn}}: \t\tadd the register to reserved list to show.\n"
+  printf("unmonitor (um) {{rn}}: \t\tremoves the register from monitoring list.\n");
+  putchar('\n');
+  printf("print (p) {{rn}}: \t\tadds the register to reserved list to show.\n"
          "                  \t\tE.g. `p r0`, `p f2`.\n");
-  printf("clear (c) {{rn}}: \t\tclear provided registers from display list.\n");
+  printf("clear (c) {{rn}}: \t\tclears provided registers from display list.\n");
   putchar('\n');
-  printf("break (b) {{line/label}}: \tset a brakepoint at the line/label.\n"
+  printf("break (b) {{line/label}}: \tsets a brakepoint at the line/label.\n"
          "                          \tvalid until you put `ub`.\n");
-  printf("unbreak (ub): \t\t\treset the breakpoint.\n");
+  printf("unbreak (ub): \t\t\tresets the breakpoint.\n");
   putchar('\n');
-  printf("run (r): \t\t\truns the program until it reaches NOP\n");
-  putchar('\n');
-	printf("exit/quit \t\t\tterminate the simulator\n");
+  printf("run (r) {{n}}: \t\t\truns the program until it reaches NOP, \n"
+         "               \t\t\tor at the nth instruction if given\n");
+  printf("fast (f) {{n}}: \t\truns the program in silent mode until it reaches NOP, \n"
+         "                \t\tor at the nth instruction if given\n");
+	printf("exit/quit \t\t\tterminates the simulator\n");
   puts("-------------------");
 }
 
@@ -257,6 +261,400 @@ enum Comm exec_inst(void)
   }
   if (!test_flag) printf("%d: ", ninsts.at(pc));
   return exec_inst(inst_reg[pc]);
+}
+
+void exec_inst_silent(void)
+{
+  while (1) {
+    if (!(0 <= pc && pc < total_inst)) {
+      printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
+      exit(1);
+    }
+    uint32_t inst = inst_reg[pc];
+
+    total_executed++;
+
+    if (int_reg[29] > r29_max) r29_max = int_reg[29];
+    if (int_reg[31] > r31_max) r31_max = int_reg[31];
+
+    if (inst == 0) {printf("nop\n"); break;}   // nop
+
+    switch (get_opcode(inst)) {
+      case 0x00:      /* R type */
+        switch (get_func(inst)) {
+          case 0x20:      // add
+            $rd = $ra + $rb;
+            pc++; break;
+          case 0x22:      // sub
+            $rd = $ra - $rb;
+            pc++; break;
+          case 0x0c:      // div2
+            $rd = $ra >> 1;
+            pc++; break;
+          case 0x1c:      // div10
+            $rd = $ra / 10;
+            pc++; break;
+          case 0x25:      // or
+            $rd = $ra | $rb;
+            pc++; break;
+          case 0x2a:      // slt
+            $rd = ($ra < $rb)? 1: 0;
+            pc++; break;
+          case 0x04:      // sllv
+            $rd = $ra << $rb;
+            pc++; break;
+          case 0x00:      // sll
+            $rd = $ra << get_shift(inst);
+            pc++; break;
+          case 0x08:      // jr
+            pc = $rd;
+            break;
+          case 0x0f:      // jalr
+            int_reg[31] = pc + 1;
+            pc = $rd;
+            break;
+          default:
+            printf("Unknown funct: 0x%x.\n", get_func(inst));
+            printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
+                   get_opcode(inst), get_rd(inst), get_ra(inst), get_rb(inst),
+                   get_shift(inst), get_func(inst));
+            puts("Abort.");
+            exit(1);
+        }
+        break;
+      case 0x11:      /* floating point */
+        switch (get_func(inst)) {
+          case 0x10:      // fneg
+            $fd = (-1) * $fa;
+            pc++; break;
+          case 0x00:      // fadd
+            $fd = $fa + $fb;
+            pc++; break;
+          case 0x01:      // fsub
+            $fd = $fa - $fb;
+            pc++; break;
+          case 0x02:      // fmul
+            $fd = $fa * $fb;
+            pc++; break;
+          case 0x03:      // fdiv
+            $fd = $fa / $fb;
+            pc++; break;
+          case 0x20:      // fclt
+            if ($fa < $fb) fcond_reg |= 0x02;
+            else fcond_reg &= 0xfffd;
+            pc++; break;
+          case 0x28:      // fcz
+            if ($fa == 0.0) fcond_reg |= 0x02;
+            else fcond_reg &= 0xfffd;
+            pc++; break;
+          case 0x06:      // fmv
+            $fd = $fa;
+            pc++; break;
+          case 0x30:      // sqrt_init
+            {
+              uint32_t s_, e_;
+              b.f = $fa;
+              s_ = b.ui32 & 0x80000000;
+              e_ = b.ui32 & 0x7f800000;
+              e_ = (e_ >> 1) + (64 << 23);
+              b.ui32 = s_ | e_;
+              $fd = b.f;
+            }
+            pc++; break;
+          default:
+            printf("Unknown funct: 0x%x.\n", get_func(inst));
+            printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
+                   get_opcode(inst), get_rd(inst), get_ra(inst), get_rb(inst),
+                   get_shift(inst), get_func(inst));
+            puts("Abort.");
+            exit(1);
+        }
+        break;
+      case 0x08:      // addi
+        $rd = $ra + get_imm_signed(inst);
+        pc++; break;
+      case 0x23:      // lw
+        memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        pc++; break;
+      case 0x2b:      // sw
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
+        pc++; break;
+      case 0x0f:      // lui
+        b.lohi.hi = get_imm(inst);
+        b.lohi.lo = 0;
+        $rd = b.ui32;
+        pc++; break;
+      case 0x0d:      // ori
+        $rd = $ra | get_imm(inst);
+        pc++; break;
+      case 0x0a:      // slti
+        $rd = ($ra < get_imm_signed(inst))? 1: 0;
+        pc++; break;
+      case 0x04:      // beq
+        if ($rd == $ra) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x05:      // bne
+        if ($rd != $ra) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x02:      // j
+        pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+        break;
+      case 0x03:      // jal
+        int_reg[31] = pc + 1;
+        pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+        break;
+      case 0x30:      // lwcZ
+        memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        pc++;
+        break;
+      case 0x38:      // swcZ
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
+        pc++;
+        break;
+      case 0x13:      // bc1t
+        if (fcond_reg&0x0002) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x15:      // bc1f
+        if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x1c:      // ftoi
+        $rd = (int) ($fa);
+        pc++;
+        break;
+      case 0x1d:      // itof
+        $fd = (float) $ra;
+        pc++;
+        break;
+      case 0x3c:      // flui
+        b.lohi.hi = get_imm(inst);
+        b.lohi.lo = 0;
+        $fd = b.f;
+        pc++;
+        break;
+      case 0x3d:      // fori
+        b.f = $fa;
+        b.lohi.lo |= get_imm(inst);
+        $fd = b.f;
+        pc++;
+        break;
+      case 0x3f:      // out
+        ofs << (char)(($rd + get_imm_signed(inst)) % 256);
+        pc++;
+        break;
+      case 0x18:      // inint
+        if (fread((char*)&($rd), 4, 1, fin) != 1) {std::cerr << "fread\n"; exit(1);}
+        pc++;
+        break;
+      case 0x19:      // inflt
+        if (fread((char*)&($fd), 4, 1, fin) != 1) {std::cerr << "fread\n"; exit(1);}
+        pc++;
+        break;
+      default:
+        fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
+        exit(1);
+    }
+  }
+}
+
+void exec_inst_silent(long max_count)
+{
+  while (max_count-- > 0) {
+    if (!(0 <= pc && pc < total_inst)) {
+      printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
+      exit(1);
+    }
+    uint32_t inst = inst_reg[pc];
+
+    total_executed++;
+
+    if (int_reg[29] > r29_max) r29_max = int_reg[29];
+    if (int_reg[31] > r31_max) r31_max = int_reg[31];
+
+    if (inst == 0) {printf("nop\n"); break;}   // nop
+
+    switch (get_opcode(inst)) {
+      case 0x00:      /* R type */
+        switch (get_func(inst)) {
+          case 0x20:      // add
+            $rd = $ra + $rb;
+            pc++; break;
+          case 0x22:      // sub
+            $rd = $ra - $rb;
+            pc++; break;
+          case 0x0c:      // div2
+            $rd = $ra >> 1;
+            pc++; break;
+          case 0x1c:      // div10
+            $rd = $ra / 10;
+            pc++; break;
+          case 0x25:      // or
+            $rd = $ra | $rb;
+            pc++; break;
+          case 0x2a:      // slt
+            $rd = ($ra < $rb)? 1: 0;
+            pc++; break;
+          case 0x04:      // sllv
+            $rd = $ra << $rb;
+            pc++; break;
+          case 0x00:      // sll
+            $rd = $ra << get_shift(inst);
+            pc++; break;
+          case 0x08:      // jr
+            pc = $rd;
+            break;
+          case 0x0f:      // jalr
+            int_reg[31] = pc + 1;
+            pc = $rd;
+            break;
+          default:
+            printf("Unknown funct: 0x%x.\n", get_func(inst));
+            printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
+                   get_opcode(inst), get_rd(inst), get_ra(inst), get_rb(inst),
+                   get_shift(inst), get_func(inst));
+            puts("Abort.");
+            exit(1);
+        }
+        break;
+      case 0x11:      /* floating point */
+        switch (get_func(inst)) {
+          case 0x10:      // fneg
+            $fd = (-1) * $fa;
+            pc++; break;
+          case 0x00:      // fadd
+            $fd = $fa + $fb;
+            pc++; break;
+          case 0x01:      // fsub
+            $fd = $fa - $fb;
+            pc++; break;
+          case 0x02:      // fmul
+            $fd = $fa * $fb;
+            pc++; break;
+          case 0x03:      // fdiv
+            $fd = $fa / $fb;
+            pc++; break;
+          case 0x20:      // fclt
+            if ($fa < $fb) fcond_reg |= 0x02;
+            else fcond_reg &= 0xfffd;
+            pc++; break;
+          case 0x28:      // fcz
+            if ($fa == 0.0) fcond_reg |= 0x02;
+            else fcond_reg &= 0xfffd;
+            pc++; break;
+          case 0x06:      // fmv
+            $fd = $fa;
+            pc++; break;
+          case 0x30:      // sqrt_init
+            {
+              uint32_t s_, e_;
+              b.f = $fa;
+              s_ = b.ui32 & 0x80000000;
+              e_ = b.ui32 & 0x7f800000;
+              e_ = (e_ >> 1) + (64 << 23);
+              b.ui32 = s_ | e_;
+              $fd = b.f;
+            }
+            pc++; break;
+          default:
+            printf("Unknown funct: 0x%x.\n", get_func(inst));
+            printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
+                   get_opcode(inst), get_rd(inst), get_ra(inst), get_rb(inst),
+                   get_shift(inst), get_func(inst));
+            puts("Abort.");
+            exit(1);
+        }
+        break;
+      case 0x08:      // addi
+        $rd = $ra + get_imm_signed(inst);
+        pc++; break;
+      case 0x23:      // lw
+        memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        pc++; break;
+      case 0x2b:      // sw
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
+        pc++; break;
+      case 0x0f:      // lui
+        b.lohi.hi = get_imm(inst);
+        b.lohi.lo = 0;
+        $rd = b.ui32;
+        pc++; break;
+      case 0x0d:      // ori
+        $rd = $ra | get_imm(inst);
+        pc++; break;
+      case 0x0a:      // slti
+        $rd = ($ra < get_imm_signed(inst))? 1: 0;
+        pc++; break;
+      case 0x04:      // beq
+        if ($rd == $ra) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x05:      // bne
+        if ($rd != $ra) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x02:      // j
+        pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+        break;
+      case 0x03:      // jal
+        int_reg[31] = pc + 1;
+        pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+        break;
+      case 0x30:      // lwcZ
+        memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        pc++;
+        break;
+      case 0x38:      // swcZ
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
+        pc++;
+        break;
+      case 0x13:      // bc1t
+        if (fcond_reg&0x0002) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x15:      // bc1f
+        if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
+      case 0x1c:      // ftoi
+        $rd = (int) ($fa);
+        pc++;
+        break;
+      case 0x1d:      // itof
+        $fd = (float) $ra;
+        pc++;
+        break;
+      case 0x3c:      // flui
+        b.lohi.hi = get_imm(inst);
+        b.lohi.lo = 0;
+        $fd = b.f;
+        pc++;
+        break;
+      case 0x3d:      // fori
+        b.f = $fa;
+        b.lohi.lo |= get_imm(inst);
+        $fd = b.f;
+        pc++;
+        break;
+      case 0x3f:      // out
+        ofs << (char)(($rd + get_imm_signed(inst)) % 256);
+        pc++;
+        break;
+      case 0x18:      // inint
+        if (fread((char*)&($rd), 4, 1, fin) != 1) {std::cerr << "fread\n"; exit(1);}
+        pc++;
+        break;
+      case 0x19:      // inflt
+        if (fread((char*)&($fd), 4, 1, fin) != 1) {std::cerr << "fread\n"; exit(1);}
+        pc++;
+        break;
+      default:
+        fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
+        exit(1);
+    }
+  }
 }
 
 /** execute single instruction */
@@ -437,7 +835,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x38:      // swcZ
-      if (!test_flag) sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) sprintf(s, "swcZ f%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
       pc++;
       break;
@@ -590,6 +988,24 @@ enum Comm analyze_commands(std::string s)
     }
     return PRINT;
   }
+  else if (comm == "fast" || comm == "f") {   // fast. XXX: これもここで(妥協の塊)
+    if (v.size() == 1) {exec_inst_silent(); return NIL;}
+    else if (v.size() == 2) {                 // XXX: returnせず実行しちゃう(妥協)
+      long count = std::stol(v[1]);
+      if (count >= 5) {
+        exec_inst_silent(count-5);
+        for (int i=0; i<5; i++) exec_inst();
+      }
+      else exec_inst_silent(count);
+      return NIL;
+    }
+    else {printf("USAGE: fast {{max_count_of_silent_execution}}\n"); return NIL;}
+  }
+  else if (comm == "at" || comm == "a") {     // at
+    std::cout << "pc: " << pc << std::endl;
+    std::cout << "line: " << ninsts.at(pc) << std::endl;
+    return NIL;
+  }
   else if (comm == "clear" || comm == "c") {  // clear
     if (v.size() == 1) {
       regs_to_show.clear();
@@ -628,7 +1044,7 @@ enum Comm analyze_commands(std::string s)
       }
       return NIL;
     }
-    else {printf("USAGE: run {{max_count_of_silent_execution}}\n"); return NIL;}
+    else {printf("USAGE: run {{max_count_of_verboosed_instruction}}\n"); return NIL;}
   }
   else {
     std::cerr << "Unknown command: " << s << std::endl;
@@ -703,8 +1119,12 @@ int main(int argc, char **argv)
   catch (const std::out_of_range& e) {  // memory range (most likely)
     std::cerr << e.what() << std::endl;
     std::string s = FormatWithCommas(total_executed);
-    std::cerr << "died at " << s << "th instruction of pc: " << pc << "\n";
-    exit(1);
+    std::cerr << "died at " << s << "th instruction of pc: " << pc << ", line: " << ninsts.at(pc) << "\n";
+  }
+  catch (const std::runtime_error& e) {  // runtime error
+    std::cerr << e.what() << std::endl;
+    std::string s = FormatWithCommas(total_executed);
+    std::cerr << "died at " << s << "th instruction of pc: " << pc << ", line: " << ninsts.at(pc) << "\n";
   }
 
   puts("\nsimulator terminated");

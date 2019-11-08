@@ -346,8 +346,12 @@ int main(int argc, char **argv)
   catch (const std::out_of_range& e) {  // memory range (most likely)
     std::cerr << e.what() << std::endl;
     std::string s = FormatWithCommas(total_executed);
-    std::cerr << "died at " << s << "th instruction of pc: " << pc << "\n";
-    exit(1);
+    std::cerr << "died at " << s << "th instruction of pc: " << pc << ", line: " << ninsts.at(pc) << "\n";
+  }
+  catch (const std::runtime_error& e) {  // runtime error
+    std::cerr << e.what() << std::endl;
+    std::string s = FormatWithCommas(total_executed);
+    std::cerr << "died at " << s << "th instruction of pc: " << pc << ", line: " << ninsts.at(pc) << "\n";
   }
 
   puts("\nsimulator terminated");
