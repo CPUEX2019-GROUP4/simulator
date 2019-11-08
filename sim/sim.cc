@@ -59,6 +59,7 @@ std::ofstream ofs;                // OUT 命令の出力ファイル
 int test_flag;                    // 出力のみ行うモード
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
+long r29_max, r31_max;
 
 union bits {
   float f;
@@ -251,6 +252,8 @@ enum Comm exec_inst(void)
 enum Comm exec_inst(uint32_t inst)
 {
   total_executed++;
+  if (int_reg[29] > r29_max) r29_max = int_reg[29];
+  if (int_reg[31] > r31_max) r31_max = int_reg[31];
 
   if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
@@ -675,6 +678,7 @@ int main(int argc, char **argv)
   puts("\nsimulator terminated");
   double tmp = (float)total_executed;
   printf("total executed instructions: %.2e\n", tmp);
+  printf("max sp(r29): %ld, max hp(r31): %ld\n", r29_max, r31_max);
 
   free(inst_reg);
 
