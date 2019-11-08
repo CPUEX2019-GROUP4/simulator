@@ -13,7 +13,7 @@
 #define BYTES_INSTRUCTION 32
 #define LEN_INSTRUCTION 40000
 #define N_REG 32
-#define SIZE_MEM (128<<20)
+#define SIZE_MEM (64<<20)
 
 #define $rd (int_reg[get_rd(inst)])
 #define $ra (int_reg[get_ra(inst)])
@@ -377,11 +377,11 @@ enum Comm exec_inst(uint32_t inst)
       pc++; break;
     case 0x23:      // lw
       if (!test_flag) sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy((char*)(&($rd)), &mem[$ra + get_imm_signed(inst)], 4);
+      memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
       pc++; break;
     case 0x2b:      // sw
       if (!test_flag) sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy(&mem[$ra + get_imm_signed(inst)], (char*)(&($rd)), 4);
+      memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
       pc++; break;
     case 0x0f:      // lui
       if (!test_flag) sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
@@ -422,12 +422,12 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x30:      // lwcZ
       if (!test_flag) sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy((char*)(&($fd)), &mem[$ra + get_imm_signed(inst)], 4);
+      memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
       pc++;
       break;
     case 0x38:      // swcZ
       if (!test_flag) sprintf(s, "swcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy(&mem[$ra + get_imm_signed(inst)], (char*)(&($fd)), 4);
+      memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
       pc++;
       break;
     case 0x13:      // bc1t
