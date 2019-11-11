@@ -1145,6 +1145,8 @@ int main(int argc, char **argv)
   printf("max sp(r29): %ld, max hp(r31): %ld\n", r29_max, r31_max);
 
   free(inst_reg);
+  ofs.flush();
+  ofs.close();
 
   return 0;
 }
