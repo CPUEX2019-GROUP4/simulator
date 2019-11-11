@@ -49,6 +49,7 @@ int32_t fcond_reg;
 // Meta variables
 std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
 std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
+std::unordered_set<long> address_to_show;   // メモリアドレス
 uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
@@ -193,6 +194,9 @@ void print_regs(void)
   }
   for (auto it : fregs_to_show) {
     printf("\t%d f%d = %f\n",  ++count, it, float_reg[it]);
+  }
+  for (auto it : address_to_show) {
+    printf("\t%d: M[%ld] = %d\n", ++count, it, mem.at(it));
   }
 }
 
@@ -983,6 +987,10 @@ enum Comm analyze_commands(std::string s)
           int no = std::stoi(v[i].substr(1));
           fregs_to_show.emplace(no);
         }
+        else if (!v[i].compare(0, 1, "M") || !v[i].compare(0, 1, "m")) {
+          long no = std::stol(v[i].substr(1));
+          address_to_show.emplace(no);
+        }
         else {printf("USAGE: print [r0-r15/f0-f15]\n"); return NIL;}
       }
     }
@@ -1010,6 +1018,7 @@ enum Comm analyze_commands(std::string s)
     if (v.size() == 1) {
       regs_to_show.clear();
       fregs_to_show.clear();
+      address_to_show.clear();
     }
     else {
       for (unsigned int i=1; i<v.size(); i++) {
@@ -1020,6 +1029,10 @@ enum Comm analyze_commands(std::string s)
         else if (!v[i].compare(0, 1, "F") || !v[i].compare(0, 1, "f")) {
           int no = std::stoi(v[i].substr(1));
           fregs_to_show.erase(no);
+        }
+        else if (!v[i].compare(0, 1, "M") || !v[i].compare(0, 1, "m")) {
+          long no = std::stol(v[i].substr(1));
+          address_to_show.erase(no);
         }
         else {printf("USAGE: clear [r0-r15/f0-f15]\n"); return NIL;}
       }

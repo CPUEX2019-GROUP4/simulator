@@ -329,6 +329,7 @@ int main(int argc, char **argv)
           break;
         case 0x3f:      // out
           ofs << (char)(($rd + get_imm_signed(inst)) % 256);
+          ofs.flush();
           pc++;
           break;
         case 0x18:      // inint
@@ -361,6 +362,7 @@ int main(int argc, char **argv)
   printf("max sp(r29): %ld, max hp(r31): %ld\n", r29_max, r31_max);
 
   free(inst_reg);
+  ofs.close();
 
   return 0;
 }
