@@ -12,9 +12,8 @@
 #include <iomanip>
 #include <locale>
 
-#define BYTES_INSTRUCTION 32
-//#define LEN_INSTRUCTION 40000
-#define LEN_INSTRUCTION 40000000
+#define BYTES_INSTRUCTION 4
+#define LEN_INSTRUCTION 100000
 #define N_REG 32
 #define SIZE_MEM (2<<20)
 
@@ -236,9 +235,9 @@ void init_inst(char *pathname)
   fin = fopen(pathname, "rb");
   if (fin == NULL) {perror("fopen"); exit(1);}
 
-  inst_reg = (uint32_t*) malloc(LEN_INSTRUCTION * 4);  // 4 bytes per instruction
+  inst_reg = (uint32_t*) malloc(LEN_INSTRUCTION * BYTES_INSTRUCTION);
   if (inst_reg == NULL) {perror("malloc"); exit(1);}
-  total_inst = fread(inst_reg, 1, LEN_INSTRUCTION, fin) / 4;
+  total_inst = fread(inst_reg, BYTES_INSTRUCTION, LEN_INSTRUCTION, fin);
   printf("loaded %d instructions.\n", total_inst);
 
   if (fclose(fin)) {perror("fclose"); exit(1);}
