@@ -15,6 +15,9 @@ if [ $# = 3 ]; then
   if [ $3 = "true" ] || [ $3 = "1" ]; then
     exe=./run
   fi
+  if [ $3 = "label" ]; then
+    exe=./run_label
+  fi
 fi
 
 make &&
