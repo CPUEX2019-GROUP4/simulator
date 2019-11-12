@@ -46,7 +46,7 @@ uint32_t encode_i(int opcode, int rd, int ra, int imm)
   else ret |= (rd & 0x1f) << 21;
   if (ra >= 32) {std::cerr << "ra (" << ra << ") >= 32\n";exit(1);}
   else ret |= (ra & 0x1f) << 16;
-  if (imm >= 65536) {std::cerr << "immediate (" << imm << ") >= 65536\n";exit(1);}
+  if (imm >= 65536) {std::cerr << "immediate (" << imm << ") >= 65536\n"; throw imm;/*exit(1);*/}
   else ret |= (imm & 0xffff);
 
   return ret;
@@ -191,9 +191,14 @@ int main(int argc, char **argv)
     v = split(inst, " ");
     if (v.empty()) continue;
 
-    uint32_t ret = assemble(v);
-
-    ofs.write((char*)(&ret), 4);
+    try {
+      uint32_t ret = assemble(v);
+      ofs.write((char*)(&ret), 4);
+    }
+    catch (const int& e) {
+      std::cerr << "imm was " << e << " at the instruction '" << inst << "'\n";
+      exit(1);
+    }
   }
 
   ifs.close();
