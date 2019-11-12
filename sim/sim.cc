@@ -13,9 +13,10 @@
 #include <locale>
 
 #define BYTES_INSTRUCTION 32
-#define LEN_INSTRUCTION 40000
+//#define LEN_INSTRUCTION 40000
+#define LEN_INSTRUCTION 40000000
 #define N_REG 32
-#define SIZE_MEM (64<<20)
+#define SIZE_MEM (2<<20)
 
 #define $rd (int_reg[get_rd(inst)])
 #define $ra (int_reg[get_ra(inst)])
@@ -62,7 +63,7 @@ std::ofstream ofs;                // OUT 命令の出力ファイル
 int test_flag;                    // 出力のみ行うモード
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
-long r29_max, r31_max;
+long r29_max, r30_max;
 
 union bits {
   float f;
@@ -279,7 +280,7 @@ void exec_inst_silent(void)
     total_executed++;
 
     if (int_reg[29] > r29_max) r29_max = int_reg[29];
-    if (int_reg[31] > r31_max) r31_max = int_reg[31];
+    if (int_reg[30] > r30_max) r30_max = int_reg[30];
 
     if (inst == 0) {printf("nop\n"); break;}   // nop
 
@@ -475,8 +476,8 @@ void exec_inst_silent(long max_count)
 
     total_executed++;
 
-    if (int_reg[29] > r29_max) r29_max = int_reg[29];
-    if (int_reg[31] > r31_max) r31_max = int_reg[31];
+    //if (int_reg[29] > r29_max) r29_max = int_reg[29];
+    //if (int_reg[31] > r30_max) r30_max = int_reg[31];
 
     if (inst == 0) {printf("nop\n"); break;}   // nop
 
@@ -666,7 +667,7 @@ enum Comm exec_inst(uint32_t inst)
 {
   total_executed++;
   if (int_reg[29] > r29_max) r29_max = int_reg[29];
-  if (int_reg[31] > r31_max) r31_max = int_reg[31];
+  if (int_reg[31] > r30_max) r30_max = int_reg[31];
 
   if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
@@ -1141,8 +1142,8 @@ int main(int argc, char **argv)
   }
 
   puts("\nsimulator terminated");
-  std::cout <<"total executed instructions: " << FormatWithCommas(total_inst) << std::endl;
-  printf("max sp(r29): %ld, max hp(r31): %ld\n", r29_max, r31_max);
+  std::cout <<"total executed instructions: " << FormatWithCommas(total_executed) << std::endl;
+  //printf("max sp(r29): %ld, max hp(r30): %ld\n", r29_max, r30_max);
 
   free(inst_reg);
   ofs.flush();
