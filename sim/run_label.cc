@@ -1,3 +1,5 @@
+// jr r31 はlabelstat に含めない
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -203,7 +205,7 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x08:      // jr
               pc = $rd;
-              label_stat(pc);
+              if (get_rd(inst) != 31) label_stat(pc); // 'jr r31'は含めない
               /*
               {
                 auto search = pc_labelcount.find(pc);
