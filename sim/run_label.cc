@@ -87,8 +87,12 @@ void init_labels(char *path)
   }
 }
 
-inline std::string pc_to_label(uint32_t pc) {return rev_labels.at(ninsts.at(pc));}
-
+inline void label_stat(uint32_t pc)
+{
+  auto search = pc_labelcount.find(pc);
+  if (search != pc_labelcount.end()) search->second++;
+  else pc_labelcount.emplace(std::make_pair(pc, 1));
+}
 void init_ninsts(char *path)
 {
   int inst = 0;
@@ -199,16 +203,20 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x08:      // jr
               pc = $rd;
+              label_stat(pc);
+              /*
               {
                 auto search = pc_labelcount.find(pc);
                 if (search != pc_labelcount.end()) search->second++;
                 else pc_labelcount.emplace(std::make_pair(pc, 1));
               }
+              */
               //pc_labelcount.insert_or_assign(pc, pc_to_label(pc)+1);
               break;
             case 0x0f:      // jalr
               int_reg[31] = pc + 1;
               pc = $rd;
+              label_stat(pc);
               break;
             default:
               printf("Unknown funct: 0x%x.\n", get_func(inst));
@@ -297,10 +305,12 @@ int main(int argc, char **argv)
           break;
         case 0x02:      // j
           pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+          label_stat(pc);
           break;
         case 0x03:      // jal
           int_reg[31] = pc + 1;
           pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+          label_stat(pc);
           break;
         case 0x30:      // lwcZ
           memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
