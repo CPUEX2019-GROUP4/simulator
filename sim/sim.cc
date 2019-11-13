@@ -13,7 +13,7 @@
 #include <locale>
 
 #define BYTES_INSTRUCTION 4
-#define LEN_INSTRUCTION 100000
+#define LEN_INSTRUCTION 200000
 #define N_REG 32
 #define SIZE_MEM (2<<20)
 
@@ -24,7 +24,7 @@
 #define $fa (float_reg[get_ra(inst)])
 #define $fb (float_reg[get_rb(inst)])
 
-enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, NOP, OP};
+enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, FAST, NOP, OP};
 
 // Parameters
 const char PROMPT[] = ">> ";
@@ -34,9 +34,9 @@ int auto_display_registers = 0;
 void show_help(void);
 void print_regs(void);
 void init_inst(char *pathname);
-enum Comm exec_inst(uint32_t);
-enum Comm exec_inst(void);
-enum Comm analyze_commands(std::string);
+Comm exec_inst(uint32_t);
+Comm exec_inst(void);
+//enum Comm analyze_commands(std::string);
 
 // registers
 uint32_t *inst_reg;           // instruction register
@@ -58,6 +58,7 @@ std::unordered_map<std::string,int> labels;  // ラベルに対するソース�
 int breakpoint;                   // breakpointの命令番号
 std::unordered_map<int,int> regs_to_monitor;    // モニターするレジスタたち
 std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
+std::unordered_map<long,char> address_to_monitor;    // モニターするアドレス
 std::ofstream ofs;                // OUT 命令の出力ファイル
 int test_flag;                    // 出力のみ行うモード
 FILE *fin;                // IN 命令のファイル
@@ -180,6 +181,12 @@ int monitor(void)
       return 1;
     }
   }
+  for (auto it = address_to_monitor.begin(); it != address_to_monitor.end(); it++) {
+    if (mem.at(it->first) != it->second) {
+      it->second = mem[it->first];
+      return 1;
+    }
+  }
   return 0;
 }
 
@@ -257,7 +264,7 @@ int16_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);
 uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 
 /** execute single instruction */
-enum Comm exec_inst(void)
+Comm exec_inst(void)
 {
   if (!(0 <= pc && pc < total_inst)) {
     printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
@@ -267,9 +274,12 @@ enum Comm exec_inst(void)
   return exec_inst(inst_reg[pc]);
 }
 
-void exec_inst_silent(void)
+Comm exec_inst_silent(void)
 {
   while (1) {
+    if (monitor()) return MONITOR;
+    if ((breakpoint >= 0) && (pc == (unsigned)breakpoint)) return BREAK;
+
     if (!(0 <= pc && pc < total_inst)) {
       printf("pc out of index. Abort. %d of %d\n", pc, total_inst);
       exit(1);
@@ -278,10 +288,10 @@ void exec_inst_silent(void)
 
     total_executed++;
 
-    if (int_reg[29] > r29_max) r29_max = int_reg[29];
-    if (int_reg[30] > r30_max) r30_max = int_reg[30];
+    //if (int_reg[29] > r29_max) r29_max = int_reg[29];
+    //if (int_reg[30] > r30_max) r30_max = int_reg[30];
 
-    if (inst == 0) {printf("nop\n"); break;}   // nop
+    if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
     switch (get_opcode(inst)) {
       case 0x00:      /* R type */
@@ -462,9 +472,11 @@ void exec_inst_silent(void)
         exit(1);
     }
   }
+
+  return OP;
 }
 
-void exec_inst_silent(long max_count)
+Comm exec_inst_silent(long max_count)
 {
   while (max_count-- > 0) {
     if (!(0 <= pc && pc < total_inst)) {
@@ -478,7 +490,7 @@ void exec_inst_silent(long max_count)
     //if (int_reg[29] > r29_max) r29_max = int_reg[29];
     //if (int_reg[31] > r30_max) r30_max = int_reg[31];
 
-    if (inst == 0) {printf("nop\n"); break;}   // nop
+    if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
     switch (get_opcode(inst)) {
       case 0x00:      /* R type */
@@ -659,60 +671,62 @@ void exec_inst_silent(long max_count)
         exit(1);
     }
   }
+
+  return OP;
 }
 
 /** execute single instruction */
-enum Comm exec_inst(uint32_t inst)
+Comm exec_inst(uint32_t inst)
 {
   total_executed++;
-  if (int_reg[29] > r29_max) r29_max = int_reg[29];
-  if (int_reg[31] > r30_max) r30_max = int_reg[31];
+  //if (int_reg[29] > r29_max) r29_max = int_reg[29];
+  //if (int_reg[31] > r30_max) r30_max = int_reg[31];
 
   if (inst == 0) {printf("nop\n"); return NOP;}   // nop
 
-  char s[256];
+  //char s[256];
 
   switch (get_opcode(inst)) {
     case 0x00:      /* R type */
       switch (get_func(inst)) {
         case 0x20:      // add
-          if (!test_flag) sprintf(s, "add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("add r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra + $rb;
           pc++; break;
         case 0x22:      // sub
-          if (!test_flag) sprintf(s, "sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("sub r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra - $rb;
           pc++; break;
         case 0x0c:      // div2
-          if (!test_flag) sprintf(s, "div2 r%d r%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) printf("div2 r%d r%d\n", get_rd(inst), get_ra(inst));
           $rd = $ra >> 1;
           pc++; break;
         case 0x1c:      // div10
-          if (!test_flag) sprintf(s, "div10 r%d r%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) printf("div10 r%d r%d\n", get_rd(inst), get_ra(inst));
           $rd = $ra / 10;
           pc++; break;
         case 0x25:      // or
-          if (!test_flag) sprintf(s, "or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("or r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra | $rb;
           pc++; break;
         case 0x2a:      // slt
-          if (!test_flag) sprintf(s, "slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("slt r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = ($ra < $rb)? 1: 0;
           pc++; break;
         case 0x04:      // sllv
-          if (!test_flag) sprintf(s, "sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("sllv r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $rd = $ra << $rb;
           pc++; break;
         case 0x00:      // sll
-          if (!test_flag) sprintf(s, "sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
+          if (!test_flag) printf("sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
           $rd = $ra << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
-          if (!test_flag) sprintf(s, "jr r%d\n", get_rd(inst));
+          if (!test_flag) printf("jr r%d\n", get_rd(inst));
           pc = $rd;
           break;
         case 0x0f:      // jalr
-          if (!test_flag) sprintf(s, "jalr r%d\n", get_rd(inst));
+          if (!test_flag) printf("jalr r%d\n", get_rd(inst));
           int_reg[31] = pc + 1;
           pc = $rd;
           break;
@@ -729,41 +743,41 @@ enum Comm exec_inst(uint32_t inst)
     case 0x11:      /* floating point */
       switch (get_func(inst)) {
         case 0x10:      // fneg
-          if (!test_flag) sprintf(s, "fneg f%d f%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) printf("fneg f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = (-1) * $fa;
           pc++; break;
         case 0x00:      // fadd
-          if (!test_flag) sprintf(s, "fadd f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("fadd f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa + $fb;
           pc++; break;
         case 0x01:      // fsub
-          if (!test_flag) sprintf(s, "fsub f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("fsub f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa - $fb;
           pc++; break;
         case 0x02:      // fmul
-          if (!test_flag) sprintf(s, "fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("fmul f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa * $fb;
           pc++; break;
         case 0x03:      // fdiv
-          if (!test_flag) sprintf(s, "fdiv f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("fdiv f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
           $fd = $fa / $fb;
           pc++; break;
         case 0x20:      // fclt
-          if (!test_flag) sprintf(s, "fclt f%d f%d\n", get_ra(inst), get_rb(inst));
+          if (!test_flag) printf("fclt f%d f%d\n", get_ra(inst), get_rb(inst));
           if ($fa < $fb) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x28:      // fcz
-          if (!test_flag) sprintf(s, "fcz f%d \n", get_ra(inst));
+          if (!test_flag) printf("fcz f%d \n", get_ra(inst));
           if ($fa == 0.0) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x06:      // fmv
-          if (!test_flag) sprintf(s, "fmv f%d f%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) printf("fmv f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = $fa;
           pc++; break;
         case 0x30:      // sqrt_init
-          if (!test_flag) sprintf(s, "sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
+          if (!test_flag) printf("sqrt_init f%d f%d\n", get_rd(inst), get_ra(inst));
           {
             uint32_t s_, e_;
             b.f = $fa;
@@ -785,95 +799,95 @@ enum Comm exec_inst(uint32_t inst)
       }
       break;
     case 0x08:      // addi
-      if (!test_flag) sprintf(s, "addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("addi r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = $ra + get_imm_signed(inst);
       pc++; break;
     case 0x23:      // lw
-      if (!test_flag) sprintf(s, "lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
       pc++; break;
     case 0x2b:      // sw
-      if (!test_flag) sprintf(s, "sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
       pc++; break;
     case 0x0f:      // lui
-      if (!test_flag) sprintf(s, "lui r%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) printf("lui r%d %d\n", get_rd(inst), get_imm(inst));
       b.lohi.hi = get_imm(inst);
       b.lohi.lo = 0;
       $rd = b.ui32;
       pc++; break;
     case 0x0d:      // ori
-      if (!test_flag) sprintf(s, "ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      if (!test_flag) printf("ori r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       $rd = $ra | get_imm(inst);
       pc++; break;
     case 0x0a:      // slti
-      if (!test_flag) sprintf(s, "slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("slti r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       $rd = ($ra < get_imm_signed(inst))? 1: 0;
       pc++; break;
     case 0x04:      // beq
       reset_bold();
-      if (!test_flag) sprintf(s, "beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("beq r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($rd == $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x05:      // bne
       reset_bold();
-      if (!test_flag) sprintf(s, "bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       if ($rd != $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x02:      // j
       reset_bold();
-      if (!test_flag) sprintf(s, "j %d\n", get_addr(inst));
+      if (!test_flag) printf("j %d\n", get_addr(inst));
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x03:      // jal
       reset_bold();
-      if (!test_flag) sprintf(s, "jal %d\n", get_addr(inst));
+      if (!test_flag) printf("jal %d\n", get_addr(inst));
       int_reg[31] = pc + 1;
       pc = ((pc+1) & 0xf0000000) | get_addr(inst);
       break;
     case 0x30:      // lwcZ
-      if (!test_flag) sprintf(s, "lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
       pc++;
       break;
     case 0x38:      // swcZ
-      if (!test_flag) sprintf(s, "swcZ f%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if (!test_flag) printf("swcZ f%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
       memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
       pc++;
       break;
     case 0x13:      // bc1t
       reset_bold();
-      if (!test_flag) sprintf(s, "bc1t %d\n", get_imm_signed(inst));
+      if (!test_flag) printf("bc1t %d\n", get_imm_signed(inst));
       if (fcond_reg&0x0002) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x15:      // bc1f
       reset_bold();
-      if (!test_flag) sprintf(s, "bc1f %d\n", get_imm_signed(inst));
+      if (!test_flag) printf("bc1f %d\n", get_imm_signed(inst));
       if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
     case 0x1c:      // ftoi
-      if (!test_flag) sprintf(s, "ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
+      if (!test_flag) printf("ftoi r%d f%d\n", get_rd(inst), get_ra(inst));
       $rd = (int) ($fa);
       pc++;
       break;
     case 0x1d:      // itof
-      if (!test_flag) sprintf(s, "itof f%d r%d\n", get_rd(inst), get_ra(inst));
+      if (!test_flag) printf("itof f%d r%d\n", get_rd(inst), get_ra(inst));
       $fd = (float) $ra;
       pc++;
       break;
     case 0x3c:      // flui
-      if (!test_flag) sprintf(s, "flui f%d %d\n", get_rd(inst), get_imm(inst));
+      if (!test_flag) printf("flui f%d %d\n", get_rd(inst), get_imm(inst));
       b.lohi.hi = get_imm(inst);
       b.lohi.lo = 0;
       $fd = b.f;
       pc++;
       break;
     case 0x3d:      // fori
-      if (!test_flag) sprintf(s, "fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
+      if (!test_flag) printf("fori f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm(inst));
       b.f = $fa;
       b.lohi.lo |= get_imm(inst);
       $fd = b.f;
@@ -881,7 +895,7 @@ enum Comm exec_inst(uint32_t inst)
       break;
     case 0x3f:      // out
       reset_bold();
-      if (!test_flag) sprintf(s, "out r%d %d\n", get_rd(inst), get_imm_signed(inst));
+      if (!test_flag) printf("out r%d %d\n", get_rd(inst), get_imm_signed(inst));
       {
         int32_t val = ($rd + get_imm_signed(inst)) % 256;
         ofs << (char)val;
@@ -889,7 +903,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x18:      // inint
-      if (!test_flag) sprintf(s, "inint r%d\n", get_rd(inst));
+      if (!test_flag) printf("inint r%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($rd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
@@ -897,7 +911,7 @@ enum Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x19:      // inflt
-      if (!test_flag) sprintf(s, "inflt f%d\n", get_rd(inst));
+      if (!test_flag) printf("inflt f%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
         if (cc != 1) {std::cerr << "fread\n" << cc; exit(1);}
@@ -909,22 +923,26 @@ enum Comm exec_inst(uint32_t inst)
       fprintf(stderr, "Unknown opcode: 0x%x\n", get_opcode(inst));
       exit(1);
   }
-  if (!test_flag) printf(s);
+  //if (!test_flag) printf(s);
   return OP;
 }
 
 /**--- analyze commands obtained from stdin ---*/
-enum Comm analyze_commands(std::string s)
+std::pair<Comm, long> analyze_commands(std::string s)
 {
+  std::pair<Comm, long> ret;
+  ret.second = 0;
+
   std::vector<std::string> v;
 
   v = split(s, " ");
 
   if (!s.compare("")) {
     std::cin.clear();
-    return NIL;
+    ret.first = NIL;
+    return ret;
   }
-  if (!s.compare("exit") || !s.compare("quit")) return QUIT;
+  else if (!s.compare("exit") || !s.compare("quit")) {ret.first = QUIT; return ret;}
 
   std::string comm = v[0];
 
@@ -935,19 +953,19 @@ enum Comm analyze_commands(std::string s)
     else {
       try {breakpoint = rev_ninsts.at(std::stoi(v[1]));}
       catch (...) {
-        try {breakpoint = labels.at(v[1]);} catch(...) {std::cerr << "Unknown label.\n"; return NIL;}
+        try {breakpoint = labels.at(v[1]);} catch(...) {std::cerr << "Unknown label.\n"; ret.first = NIL;}
       }
       printf("breakpoint: %dth instruction\n", breakpoint);
     }
-    return BREAK;
+    ret.first = BREAK;
   }
-  else if (comm == "unbreak" || comm == "ub") return UNBREAK;  // unbreak
+  else if (comm == "unbreak" || comm == "ub") ret.first = UNBREAK;  // unbreak
   else if (comm == "step" || comm == "s") { // step実行
-    return STEP;
+    ret.first = STEP;
   }
   else if (comm == "monitor" || comm == "m") {  // monitor
     if (v[1] == "") {
-      printf("USAGE: monitor [r0-r15/f0-f15]\n");
+      printf("USAGE: monitor [r0-r15/f0-f15/m{{address}}]\n");
     }
     else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
       int no = std::stoi(v[1].substr(1));
@@ -957,11 +975,22 @@ enum Comm analyze_commands(std::string s)
       int no = std::stoi(v[1].substr(1));
       fregs_to_monitor.emplace(std::make_pair(no, float_reg[no]));
     }
-    return MONITOR;
+    else if (!v[1].compare(0, 1, "M") || !v[1].compare(0, 1, "m")) {
+      long no = std::stol(v[1].substr(1));
+      try {
+        address_to_monitor.emplace(std::make_pair(no, mem.at(no)));
+      }
+      catch (...) {
+        std::cerr << "invalid address\n";
+        ret.first = NIL;
+        return ret;
+      }
+    }
+    ret.first = MONITOR;
   }
   else if (comm == "unmonitor" || comm == "um") {
     if (v[1] == "") {
-      printf("USAGE: unmonitor [r0-r15/f0-f15]\n");
+      printf("USAGE: unmonitor [r0-r15/f0-f15/m{{address}}]\n");
     }
     else if (!v[1].compare(0, 1, "R") || !v[1].compare(0, 1, "r")) {
       int no = std::stoi(v[1].substr(1));
@@ -971,7 +1000,11 @@ enum Comm analyze_commands(std::string s)
       int no = std::stoi(v[1].substr(1));
       fregs_to_monitor.erase(no);
     }
-    return UNMONITOR;  // unmonitor
+    else if (!v[1].compare(0, 1, "M") || !v[1].compare(0, 1, "m")) {
+      long no = std::stol(v[1].substr(1));
+      address_to_monitor.erase(no);
+    }
+    ret.first = UNMONITOR;  // unmonitor
   }
   else if (comm == "print" || comm == "p") {  // print
     if (v.size() == 1) {
@@ -991,28 +1024,23 @@ enum Comm analyze_commands(std::string s)
           long no = std::stol(v[i].substr(1));
           address_to_show.emplace(no);
         }
-        else {printf("USAGE: print [r0-r15/f0-f15]\n"); return NIL;}
+        else {printf("USAGE: print [r0-r15/f0-f15]\n"); ret.first = NIL;}
       }
     }
-    return PRINT;
+    ret.first = PRINT;
   }
-  else if (comm == "fast" || comm == "f") {   // fast. XXX: これもここで(妥協の塊)
-    if (v.size() == 1) {exec_inst_silent(); return NIL;}
-    else if (v.size() == 2) {                 // XXX: returnせず実行しちゃう(妥協)
+  else if (comm == "fast" || comm == "f") {   // fast
+    ret.first = FAST;
+    if (v.size() == 2) {
       long count = std::stol(v[1]);
-      if (count >= 5) {
-        exec_inst_silent(count-5);
-        for (int i=0; i<5; i++) exec_inst();
-      }
-      else exec_inst_silent(count);
-      return NIL;
+      ret.second= count;
     }
-    else {printf("USAGE: fast {{max_count_of_silent_execution}}\n"); return NIL;}
+    else if (v.size() > 2) {printf("USAGE: fast {{max_count_of_silent_execution}}\n"); ret.first = NIL;}
   }
   else if (comm == "at" || comm == "a") {     // at
     std::cout << "pc: " << pc << std::endl;
     std::cout << "line: " << ninsts.at(pc) << std::endl;
-    return NIL;
+    ret.first = NIL;
   }
   else if (comm == "clear" || comm == "c") {  // clear
     if (v.size() == 1) {
@@ -1034,38 +1062,29 @@ enum Comm analyze_commands(std::string s)
           long no = std::stol(v[i].substr(1));
           address_to_show.erase(no);
         }
-        else {printf("USAGE: clear [r0-r15/f0-f15]\n"); return NIL;}
+        else {printf("USAGE: clear [r0-r15/f0-f15]\n"); ret.first = NIL;}
       }
     }
-    return CLEAR;
+    ret.first = CLEAR;
   }
   else if (comm == "help" || comm == "h") {   // help
     show_help();
-    return HELP;
+    ret.first = HELP;
   }
   else if (comm == "run" || comm == "r") {    // run
-    if (v.size() == 1) return RUN;
-    else if (v.size() == 2) {                 // XXX: returnせず実行しちゃう(妥協)
+    ret.first = RUN;
+    if (v.size() == 2) {
       long count = std::stol(v[1]);
-      while (count-- > 0) {
-        if (monitor()) break;
-        Comm ret = exec_inst();
-        if (ret == NOP) break;
-        else if (ret == BREAK) break;
-        if (breakpoint < 0) continue;
-        else if (pc == (unsigned)breakpoint) break;
-      }
-      return NIL;
+      ret.second = count;
     }
-    else {printf("USAGE: run {{max_count_of_verboosed_instruction}}\n"); return NIL;}
+    else if (v.size() > 2) {printf("USAGE: run {{max_count_of_verboosed_instruction}}\n"); ret.first = NIL;}
   }
   else {
     std::cerr << "Unknown command: " << s << std::endl;
-    return ERR;
+    ret.first = ERR;
   }
 
-  printf("something unexpexted has happend\n");
-  return ERR;
+  return ret;
 }
 
 void test(void)
@@ -1107,19 +1126,52 @@ int main(int argc, char **argv)
       while (1) {
         printf("%s", PROMPT);
         if (!std::getline(std::cin, s)) break;
-        enum Comm comm = analyze_commands(s);
+        std::pair<Comm,long> res = analyze_commands(s);
+        Comm comm = res.first;
+        long count = res.second;
+
         if (comm == NIL) continue;
         else if (comm == QUIT) break;
         else if (comm == ERR) continue;
         else if (comm == STEP) exec_inst();
         else if (comm == RUN) {
-          while (1) {
-            if (monitor()) break;
-            Comm ret = exec_inst();
-            if (ret == NOP) break;
-            else if (ret == BREAK) break;
-            if (breakpoint < 0) continue;
-            else if (pc == (unsigned)breakpoint) break;
+          if (count == 0) {
+            while (1) {
+              if (monitor()) break;
+              Comm ret = exec_inst();
+              if (ret == NOP) break;
+              else if (ret == BREAK) break;
+              if (breakpoint < 0) continue;
+              else if (pc == (unsigned)breakpoint) break;
+            }
+          }
+          else if (count > 0) {
+            while (count-- > 0) {
+              if (monitor()) break;
+              Comm ret = exec_inst();
+              if (ret == NOP) break;
+              else if (ret == BREAK) break;
+              if (breakpoint < 0) continue;
+              else if (pc == (unsigned)breakpoint) break;
+            }
+          }
+        }
+        else if (comm == FAST) {
+          if (count == 0) exec_inst_silent();
+          else if (count > 0) {
+            if (count >= 5) {
+              if (monitor()) break;
+              Comm ret = exec_inst_silent(count-5);
+              if (ret == NOP) break;
+              else if (ret == BREAK) break;
+              else if (ret == MONITOR) break;
+              for (int i=0; i<5; i++) {
+                ret = exec_inst();
+                if (ret == NOP) break;
+                else if (ret == BREAK) break;
+                else if (ret == MONITOR) break;
+              }
+            }
           }
         }
         else if (comm == UNBREAK) {breakpoint = -1; continue;}
