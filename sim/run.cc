@@ -29,7 +29,7 @@ uint32_t *inst_reg;           // instruction register
 uint32_t pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
-std::array<char, SIZE_MEM> mem;           // memory
+std::array<unsigned char, SIZE_MEM> mem;           // memory
 int32_t fcond_reg;
 
 // Meta variables
@@ -260,10 +260,10 @@ int main(int argc, char **argv)
           $rd = $ra + get_imm_signed(inst);
           pc++; break;
         case 0x23:      // lw
-          memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
+          memcpy((unsigned char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
           pc++; break;
         case 0x2b:      // sw
-          memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
+          memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($rd)), 4);
           pc++; break;
         case 0x0f:      // lui
           b.lohi.hi = get_imm(inst);
@@ -292,11 +292,11 @@ int main(int argc, char **argv)
           pc = ((pc+1) & 0xf0000000) | get_addr(inst);
           break;
         case 0x30:      // lwcZ
-          memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
+          memcpy((unsigned char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
           pc++;
           break;
         case 0x38:      // swcZ
-          memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
+          memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($fd)), 4);
           pc++;
           break;
         case 0x13:      // bc1t

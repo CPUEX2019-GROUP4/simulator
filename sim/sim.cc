@@ -43,13 +43,15 @@ uint32_t *inst_reg;           // instruction register
 uint32_t pc = 0;                   // program counter
 int32_t int_reg[N_REG];       // int
 float   float_reg[N_REG];     // float
-std::array<char, SIZE_MEM> mem;           // memory
+std::array<unsigned char, SIZE_MEM> mem;           // memory
 int32_t fcond_reg;
 
 // Meta variables
 std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
 std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
 std::unordered_set<long> address_to_show;   // メモリアドレス
+std::unordered_set<long> intaddress_to_show;   // メモリアドレス(int)
+std::unordered_set<long> fltaddress_to_show;   // メモリアドレス(flt)
 uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
@@ -58,7 +60,7 @@ std::unordered_map<std::string,int> labels;  // ラベルに対するソース�
 int breakpoint;                   // breakpointの命令番号
 std::unordered_map<int,int> regs_to_monitor;    // モニターするレジスタたち
 std::unordered_map<int,float> fregs_to_monitor;    // (浮動小数)モニターするレジスタたち
-std::unordered_map<long,char> address_to_monitor;    // モニターするアドレス
+std::unordered_map<long,unsigned char> address_to_monitor;    // モニターするアドレス
 std::ofstream ofs;                // OUT 命令の出力ファイル
 int test_flag;                    // 出力のみ行うモード
 FILE *fin;                // IN 命令のファイル
@@ -204,6 +206,14 @@ void print_regs(void)
   }
   for (auto it : address_to_show) {
     printf("\t%d: M[%ld] = %d\n", ++count, it, mem.at(it));
+  }
+  for (auto it : intaddress_to_show) {
+    memcpy((unsigned char*)&b.ui32, (unsigned char*)&mem.at(it), 4);
+    printf("\t%d: M[%ld:%ld](:int) = %d\n", ++count, it, it+3, b.ui32);
+  }
+  for (auto it : fltaddress_to_show) {
+    memcpy((unsigned char*)&b.f, (unsigned char*)&mem.at(it), 4);
+    printf("\t%d: M[%ld:%ld](:flt) = %f\n", ++count, it, it+3, b.f);
   }
 }
 
@@ -388,10 +398,10 @@ Comm exec_inst_silent(void)
         $rd = $ra + get_imm_signed(inst);
         pc++; break;
       case 0x23:      // lw
-        memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        memcpy((unsigned char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
         pc++; break;
       case 0x2b:      // sw
-        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($rd)), 4);
         pc++; break;
       case 0x0f:      // lui
         b.lohi.hi = get_imm(inst);
@@ -420,11 +430,11 @@ Comm exec_inst_silent(void)
         pc = ((pc+1) & 0xf0000000) | get_addr(inst);
         break;
       case 0x30:      // lwcZ
-        memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        memcpy((unsigned char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
         pc++;
         break;
       case 0x38:      // swcZ
-        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($fd)), 4);
         pc++;
         break;
       case 0x13:      // bc1t
@@ -587,10 +597,10 @@ Comm exec_inst_silent(long max_count)
         $rd = $ra + get_imm_signed(inst);
         pc++; break;
       case 0x23:      // lw
-        memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        memcpy((unsigned char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
         pc++; break;
       case 0x2b:      // sw
-        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($rd)), 4);
         pc++; break;
       case 0x0f:      // lui
         b.lohi.hi = get_imm(inst);
@@ -619,11 +629,11 @@ Comm exec_inst_silent(long max_count)
         pc = ((pc+1) & 0xf0000000) | get_addr(inst);
         break;
       case 0x30:      // lwcZ
-        memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
+        memcpy((unsigned char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
         pc++;
         break;
       case 0x38:      // swcZ
-        memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
+        memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($fd)), 4);
         pc++;
         break;
       case 0x13:      // bc1t
@@ -804,11 +814,11 @@ Comm exec_inst(uint32_t inst)
       pc++; break;
     case 0x23:      // lw
       if (!test_flag) printf("lw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy((char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
+      memcpy((unsigned char*)(&($rd)), &mem.at($ra + get_imm_signed(inst)), 4);
       pc++; break;
     case 0x2b:      // sw
       if (!test_flag) printf("sw r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($rd)), 4);
+      memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($rd)), 4);
       pc++; break;
     case 0x0f:      // lui
       if (!test_flag) printf("lui r%d %d\n", get_rd(inst), get_imm(inst));
@@ -849,12 +859,12 @@ Comm exec_inst(uint32_t inst)
       break;
     case 0x30:      // lwcZ
       if (!test_flag) printf("lwcZ f%d f%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy((char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
+      memcpy((unsigned char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
       pc++;
       break;
     case 0x38:      // swcZ
       if (!test_flag) printf("swcZ f%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
-      memcpy(&mem.at($ra + get_imm_signed(inst)), (char*)(&($fd)), 4);
+      memcpy(&mem.at($ra + get_imm_signed(inst)), (unsigned char*)(&($fd)), 4);
       pc++;
       break;
     case 0x13:      // bc1t
@@ -960,7 +970,7 @@ std::pair<Comm, long> analyze_commands(std::string s)
     ret.first = BREAK;
   }
   else if (comm == "unbreak" || comm == "ub") ret.first = UNBREAK;  // unbreak
-  else if (comm == "step" || comm == "s") { // step実行
+  else if (comm == "step" || comm == "s") { // step
     ret.first = STEP;
   }
   else if (comm == "monitor" || comm == "m") {  // monitor
@@ -1021,8 +1031,18 @@ std::pair<Comm, long> analyze_commands(std::string s)
           fregs_to_show.emplace(no);
         }
         else if (!v[i].compare(0, 1, "M") || !v[i].compare(0, 1, "m")) {
-          long no = std::stol(v[i].substr(1));
-          address_to_show.emplace(no);
+          if (!v[i].compare(1, 1, "I") || !v[i].compare(1, 1, "i")) {  // memory (int)
+            long no = std::stol(v[i].substr(2));
+            intaddress_to_show.emplace(no);
+          }
+          else if (!v[i].compare(1, 1, "F") || !v[i].compare(1, 1, "f")) {  // memory (flt)
+            long no = std::stol(v[i].substr(2));
+            fltaddress_to_show.emplace(no);
+          }
+          else {
+            long no = std::stol(v[i].substr(1));
+            address_to_show.emplace(no);
+          }
         }
         else {printf("USAGE: print [r0-r15/f0-f15]\n"); ret.first = NIL;}
       }
@@ -1059,8 +1079,18 @@ std::pair<Comm, long> analyze_commands(std::string s)
           fregs_to_show.erase(no);
         }
         else if (!v[i].compare(0, 1, "M") || !v[i].compare(0, 1, "m")) {
-          long no = std::stol(v[i].substr(1));
-          address_to_show.erase(no);
+          if (!v[i].compare(1, 1, "I") || !v[i].compare(1, 1, "i")) {  // memory (int)
+            long no = std::stol(v[i].substr(2));
+            intaddress_to_show.erase(no);
+          }
+          else if (!v[i].compare(1, 1, "F") || !v[i].compare(1, 1, "f")) {  // memory (flt)
+            long no = std::stol(v[i].substr(2));
+            fltaddress_to_show.erase(no);
+          }
+          else {
+            long no = std::stol(v[i].substr(1));
+            address_to_show.erase(no);
+          }
         }
         else {printf("USAGE: clear [r0-r15/f0-f15]\n"); ret.first = NIL;}
       }
