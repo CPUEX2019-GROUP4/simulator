@@ -55,6 +55,36 @@ union bits {
   } lohi;
 } b;
 
+//XXX: fpuのcopy (for performance) (as of 13 Nov)
+#define MINPREC 6
+#define MOUTPREC 6
+#define SQRT_LOOP_COUNT 2
+
+#define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
+
+uint32_t sqrt_init_m(uint32_t emod2, uint32_t m) {
+    b.ui32 = (m & MUSE(MINPREC)) | (emod2 ? 0x3f800000 : 0x40000000);
+    b.f = sqrtf(b.f);
+    uint32_t m_ = b.ui32 & MUSE(MOUTPREC);
+    return m_;
+}
+
+uint32_t sqrt_init_u(float f) {
+    b.f = f;
+    uint32_t u = b.ui32;
+    uint32_t s = u & 0x80000000, e = (u >> 23) & 0x000000ff, m = u & 0x007fffff;
+    uint32_t m_ = sqrt_init_m(e & 1, m);
+    uint32_t e_ = ((e - 1) >> 1) + 64;
+    uint32_t u_ = s | (e_ << 23) | m_;
+    return u_;
+}
+
+float sqrt_init(float f) {
+    b.ui32 = sqrt_init_u(f);
+    return b.f;
+}
+//XXX: end of copy
+
 template<class T>
 std::string FormatWithCommas(T value)
 {
@@ -250,6 +280,8 @@ int main(int argc, char **argv)
               $fd = $fa;
               pc++; break;
             case 0x30:      // sqrt_init
+              $fd = sqrt_init($fa);
+              /*
               {
                 uint32_t s_, e_;
                 b.f = $fa;
@@ -259,6 +291,7 @@ int main(int argc, char **argv)
                 b.ui32 = s_ | e_;
                 $fd = b.f;
               }
+              */
               pc++; break;
             default:
               printf("Unknown funct: 0x%x.\n", get_func(inst));
