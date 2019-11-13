@@ -205,15 +205,7 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x08:      // jr
               pc = $rd;
-              if (get_rd(inst) != 31) label_stat(pc); // 'jr r31'は含めない
-              /*
-              {
-                auto search = pc_labelcount.find(pc);
-                if (search != pc_labelcount.end()) search->second++;
-                else pc_labelcount.emplace(std::make_pair(pc, 1));
-              }
-              */
-              //pc_labelcount.insert_or_assign(pc, pc_to_label(pc)+1);
+              if (get_rd(inst) != 31) label_stat(pc); // XXX: 'jr r31'は含めない
               break;
             case 0x0f:      // jalr
               int_reg[31] = pc + 1;
