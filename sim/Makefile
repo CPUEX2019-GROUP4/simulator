@@ -1,25 +1,34 @@
 CC = g++
-LDFLAGS = -Wall -O2
+CFLAGS = -Wall -O2
+LDFLAGS = -lm
+SRCS=$(wildcard *.cc)
+TARGETS = swap preassemble assemble sim run run_label
+OBJTARGETS = $(TARGETS:=.o)
+OBJS = $(filter-out swap.o preassemble.o assemble.o sim.o run.o run_label.o, $(SRCS:.cc=.o))
 
-all: sim run swap assemble preassemble run_label
+.PHONY: all
+all: sim run assemble preassemble run_label
 
-sim: sim.cc
-	$(CC) $(LDFLAGS) $< -o $@
+sim: $(OBJS) sim.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-run: run.cc
-	$(CC) $(LDFLAGS) $< -o $@
+run: $(OBJS) run.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-run_label: run_label.cc
-	$(CC) $(LDFLAGS) $< -o $@
+run_label: $(OBJS) run_label.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-preassemble: preassemble.cc
-	$(CC) $(LDFLAGS) $< -o $@
+preassemble: $(OBJS) preassemble.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-swap: swap.c
-	$(CC) $(LDFLAGS) $< -o $@
+assemble: $(OBJS) assemble.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-assemble: assemble.cc
-	$(CC) $(LDFLAGS) $< -o $@
+%.o: %.c
+	$(CC) $(CFLAGS) -c $^
+
+swap: swap.o
+	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm sim run swap assemble preassemble run_label
+	rm $(OBJS) $(TARGETS) $(OBJTARGETS)

@@ -6,12 +6,10 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include "assembleutil.hh"
+#include "stringutil.hh"
 
-#define $(i) (std::stoi(v[i]))
-#define $r(i) (std::stoi(v[i].substr(1)))
-#define $f(i) (std::stoi(v[i].substr(1)))
-
-std::vector<std::string> split(std::string s, std::string delimiter, bool shrink=true);
+//std::vector<std::string> split(std::string s, std::string delimiter, bool shrink=true);
 
 uint32_t encode_r(int opcode, int func, int rd, int ra, int rb, int shift)
 {
@@ -128,6 +126,7 @@ uint32_t assemble(std::vector<std::string> v)
 }
 
 /**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
+/*
 std::vector<std::string> split(std::string s, std::string delimiter, bool shrink)
 {
   std::vector<std::string> v;
@@ -152,6 +151,7 @@ std::vector<std::string> split(std::string s, std::string delimiter, bool shrink
   }
   return v;
 }
+*/
 
 void print_help(char *program_name)
 {
