@@ -1060,6 +1060,7 @@ std::pair<Comm, long> analyze_commands(std::string s)
   else if (comm == "at" || comm == "a") {     // at
     std::cout << "pc: " << pc << std::endl;
     std::cout << "line: " << ninsts.at(pc) << std::endl;
+    std::cout << "executed instructions: " << total_executed << std::endl;
     ret.first = NIL;
   }
   else if (comm == "clear" || comm == "c") {  // clear
