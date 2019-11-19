@@ -232,7 +232,7 @@ void print_regs(void)
     if (it == dest_reg) printf("\x1b[0m");
   }
   for (auto it : fregs_to_show) {
-    printf("\t%d f%d = %f\n",  ++count, it, float_reg[it]);
+    printf("\t%d: f%d = %f\n",  ++count, it, float_reg[it]);
   }
   for (auto it : address_to_show) {
     printf("\t%d: M[%ld] = %d\n", ++count, it, mem.at(it));
