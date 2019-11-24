@@ -128,6 +128,82 @@ int16_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);
 //int16_t get_imm_signed(uint32_t inst) {return (int16_t)(inst & 0x7fff);}
 uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 
+void finv_init_m(uint32_t *m_)
+{
+  uint32_t m, f;
+  m = *m_ >> 17;
+  switch (m) {
+    case 0b000000: f = 0b000000; break;
+    case 0b000001: f = 0b111110; break;
+    case 0b000010: f = 0b111100; break;
+    case 0b000011: f = 0b111010; break;
+    case 0b000100: f = 0b111000; break;
+    case 0b000101: f = 0b110110; break;
+    case 0b000110: f = 0b110101; break;
+    case 0b000111: f = 0b110011; break;
+    case 0b001000: f = 0b110001; break;
+    case 0b001001: f = 0b110000; break;
+    case 0b001010: f = 0b101110; break;
+    case 0b001011: f = 0b101101; break;
+    case 0b001100: f = 0b101011; break;
+    case 0b001101: f = 0b101010; break;
+    case 0b001110: f = 0b101001; break;
+    case 0b001111: f = 0b100111; break;
+    case 0b010000: f = 0b100110; break;
+    case 0b010001: f = 0b100101; break;
+    case 0b010010: f = 0b100011; break;
+    case 0b010011: f = 0b100010; break;
+    case 0b010100: f = 0b100001; break;
+    case 0b010101: f = 0b100000; break;
+    case 0b010110: f = 0b011111; break;
+    case 0b010111: f = 0b011110; break;
+    case 0b011000: f = 0b011101; break;
+    case 0b011001: f = 0b011100; break;
+    case 0b011010: f = 0b011011; break;
+    case 0b011011: f = 0b011010; break;
+    case 0b011100: f = 0b011001; break;
+    case 0b011101: f = 0b011000; break;
+    case 0b011110: f = 0b010111; break;
+    case 0b011111: f = 0b010110; break;
+    case 0b100000: f = 0b010101; break;
+    case 0b100001: f = 0b010100; break;
+    case 0b100010: f = 0b010011; break;
+    case 0b100011: f = 0b010010; break;
+    case 0b100100: f = 0b010001; break;
+    case 0b100101: f = 0b010001; break;
+    case 0b100110: f = 0b010000; break;
+    case 0b100111: f = 0b001111; break;
+    case 0b101000: f = 0b001110; break;
+    case 0b101001: f = 0b001110; break;
+    case 0b101010: f = 0b001101; break;
+    case 0b101011: f = 0b001100; break;
+    case 0b101100: f = 0b001011; break;
+    case 0b101101: f = 0b001011; break;
+    case 0b101110: f = 0b001010; break;
+    case 0b101111: f = 0b001001; break;
+    case 0b110000: f = 0b001001; break;
+    case 0b110001: f = 0b001000; break;
+    case 0b110010: f = 0b000111; break;
+    case 0b110011: f = 0b000111; break;
+    case 0b110100: f = 0b000110; break;
+    case 0b110101: f = 0b000110; break;
+    case 0b110110: f = 0b000101; break;
+    case 0b110111: f = 0b000100; break;
+    case 0b111000: f = 0b000100; break;
+    case 0b111001: f = 0b000011; break;
+    case 0b111010: f = 0b000011; break;
+    case 0b111011: f = 0b000010; break;
+    case 0b111100: f = 0b000010; break;
+    case 0b111101: f = 0b000001; break;
+    case 0b111110: f = 0b000001; break;
+    case 0b111111: f = 0b000000; break;
+    default: f = 0;
+  }
+  *m_ = f << 17;
+}
+
+
+
 int main(int argc, char **argv)
 {
   if (argc != 7) {
@@ -248,13 +324,16 @@ int main(int argc, char **argv)
               }
             case 0x38:      // finv_init
               {
-                uint32_t s_, e_;
+                uint32_t s_, e_, m_, x;
                 b.f = $fa;
                 s_ = b.ui32 & 0x80000000;
                 e_ = b.ui32 & 0x7f800000;
-                e_ = (127 << 23) - e_;
-                e_ += (127 << 23);
-                b.ui32 = s_ | e_;
+                m_ = b.ui32 & 0x007fffff;
+                x  = b.ui32 & 0x00400000;
+                e_ = (253 << 23) - e_;
+                if (x == 0) e_ += 0;
+                finv_init_m(&m_);
+                b.ui32 = s_ | e_ | m_;
                 $fd = b.f;
               }
               pc++; break;
