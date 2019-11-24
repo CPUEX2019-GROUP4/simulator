@@ -24,10 +24,6 @@
 #define $fa (float_reg[get_ra(inst)])
 #define $fb (float_reg[get_rb(inst)])
 
-#define MINPREC 6
-#define MOUTPREC 6
-#define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
-
 // registers
 uint32_t *inst_reg;           // instruction register
 uint32_t pc = 0;                   // program counter
@@ -454,22 +450,16 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x30:      // sqrt_init
               {
-                uint32_t s, e, e_, m,  m_;
+                uint32_t s_, e_, m_;
                 b.f = $fa;
-                s  = b.ui32 & 0x80000000;
-                e  = (b.ui32 >> 23) & 0x000000ff;
-                m  = b.ui32 &  0x007fffff;
-               // printf("s = %d\n", s);
-               // printf("e = %d\n", e);
-               // printf("m = %d\n", m);
-                m_ = sqrt_init_m (e & 1, m);
-                e_ = ((e - 1) >> 1) + 64;
-               // printf("e_ = %d\n", e_);
-               // printf("m_ = %d\n", m_);
-                b.ui32 = s | (e_ << 23) | m_;
-                printf("f = %f\n", b.f);
+                s_  = b.ui32 & 0x80000000;
+                e_  = (b.ui32 >> 23) & 0x000000ff;
+                m_ = sqrt_init_m (e_ & 1, (b.ui32 & 0x007fffff));
+                e_ = (((e_ - 1) >> 1) + 64) << 23;
+                b.ui32 = s_ | e_ | m_;
                 $fd = b.f;
               }
+              pc++; break;
             case 0x38:      // finv_init
               {
                 uint32_t s_, e_, m_, x;
