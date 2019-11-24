@@ -24,6 +24,10 @@
 #define $fa (float_reg[get_ra(inst)])
 #define $fb (float_reg[get_rb(inst)])
 
+#define MINPREC 6
+#define MOUTPREC 6
+#define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
+
 // registers
 uint32_t *inst_reg;           // instruction register
 uint32_t pc = 0;                   // program counter
@@ -202,6 +206,142 @@ void finv_init_m(uint32_t *m_)
   *m_ = f << 17;
 }
 
+uint32_t sqrt_init_m(uint32_t emod2, uint32_t m)
+{
+  uint32_t f;
+  switch ((emod2 << 6) | (m >> 17)) {
+    case 0b0000000: f = 0b011010;break;
+    case 0b0000001: f = 0b011011;break;
+    case 0b0000010: f = 0b011011;break;
+    case 0b0000011: f = 0b011100;break;
+    case 0b0000100: f = 0b011101;break;
+    case 0b0000101: f = 0b011101;break;
+    case 0b0000110: f = 0b011110;break;
+    case 0b0000111: f = 0b011111;break;
+    case 0b0001000: f = 0b100000;break;
+    case 0b0001001: f = 0b100000;break;
+    case 0b0001010: f = 0b100001;break;
+    case 0b0001011: f = 0b100001;break;
+    case 0b0001100: f = 0b100010;break;
+    case 0b0001101: f = 0b100011;break;
+    case 0b0001110: f = 0b100011;break;
+    case 0b0001111: f = 0b100100;break;
+    case 0b0010000: f = 0b100101;break;
+    case 0b0010001: f = 0b100101;break;
+    case 0b0010010: f = 0b100110;break;
+    case 0b0010011: f = 0b100111;break;
+    case 0b0010100: f = 0b100111;break;
+    case 0b0010101: f = 0b101000;break;
+    case 0b0010110: f = 0b101000;break;
+    case 0b0010111: f = 0b101001;break;
+    case 0b0011000: f = 0b101010;break;
+    case 0b0011001: f = 0b101010;break;
+    case 0b0011010: f = 0b101011;break;
+    case 0b0011011: f = 0b101011;break;
+    case 0b0011100: f = 0b101100;break;
+    case 0b0011101: f = 0b101101;break;
+    case 0b0011110: f = 0b101101;break;
+    case 0b0011111: f = 0b101110;break;
+    case 0b0100000: f = 0b101110;break;
+    case 0b0100001: f = 0b101111;break;
+    case 0b0100010: f = 0b110000;break;
+    case 0b0100011: f = 0b110000;break;
+    case 0b0100100: f = 0b110001;break;
+    case 0b0100101: f = 0b110001;break;
+    case 0b0100110: f = 0b110010;break;
+    case 0b0100111: f = 0b110010;break;
+    case 0b0101000: f = 0b110011;break;
+    case 0b0101001: f = 0b110011;break;
+    case 0b0101010: f = 0b110100;break;
+    case 0b0101011: f = 0b110101;break;
+    case 0b0101100: f = 0b110101;break;
+    case 0b0101101: f = 0b110110;break;
+    case 0b0101110: f = 0b110110;break;
+    case 0b0101111: f = 0b110111;break;
+    case 0b0110000: f = 0b110111;break;
+    case 0b0110001: f = 0b111000;break;
+    case 0b0110010: f = 0b111000;break;
+    case 0b0110011: f = 0b111001;break;
+    case 0b0110100: f = 0b111001;break;
+    case 0b0110101: f = 0b111010;break;
+    case 0b0110110: f = 0b111010;break;
+    case 0b0110111: f = 0b111011;break;
+    case 0b0111000: f = 0b111011;break;
+    case 0b0111001: f = 0b111100;break;
+    case 0b0111010: f = 0b111100;break;
+    case 0b0111011: f = 0b111101;break;
+    case 0b0111100: f = 0b111101;break;
+    case 0b0111101: f = 0b111110;break;
+    case 0b0111110: f = 0b111110;break;
+    case 0b0111111: f = 0b111111;break;
+    case 0b1000000: f = 0b000000;break;
+    case 0b1000001: f = 0b000000;break;
+    case 0b1000010: f = 0b000000;break;
+    case 0b1000011: f = 0b000001;break;
+    case 0b1000100: f = 0b000001;break;
+    case 0b1000101: f = 0b000010;break;
+    case 0b1000110: f = 0b000010;break;
+    case 0b1000111: f = 0b000011;break;
+    case 0b1001000: f = 0b000011;break;
+    case 0b1001001: f = 0b000100;break;
+    case 0b1001010: f = 0b000100;break;
+    case 0b1001011: f = 0b000101;break;
+    case 0b1001100: f = 0b000101;break;
+    case 0b1001101: f = 0b000110;break;
+    case 0b1001110: f = 0b000110;break;
+    case 0b1001111: f = 0b000111;break;
+    case 0b1010000: f = 0b000111;break;
+    case 0b1010001: f = 0b001000;break;
+    case 0b1010010: f = 0b001000;break;
+    case 0b1010011: f = 0b001000;break;
+    case 0b1010100: f = 0b001001;break;
+    case 0b1010101: f = 0b001001;break;
+    case 0b1010110: f = 0b001010;break;
+    case 0b1010111: f = 0b001010;break;
+    case 0b1011000: f = 0b001011;break;
+    case 0b1011001: f = 0b001011;break;
+    case 0b1011010: f = 0b001011;break;
+    case 0b1011011: f = 0b001100;break;
+    case 0b1011100: f = 0b001100;break;
+    case 0b1011101: f = 0b001101;break;
+    case 0b1011110: f = 0b001101;break;
+    case 0b1011111: f = 0b001101;break;
+    case 0b1100000: f = 0b001110;break;
+    case 0b1100001: f = 0b001110;break;
+    case 0b1100010: f = 0b001111;break;
+    case 0b1100011: f = 0b001111;break;
+    case 0b1100100: f = 0b010000;break;
+    case 0b1100101: f = 0b010000;break;
+    case 0b1100110: f = 0b010000;break;
+    case 0b1100111: f = 0b010001;break;
+    case 0b1101000: f = 0b010001;break;
+    case 0b1101001: f = 0b010001;break;
+    case 0b1101010: f = 0b010010;break;
+    case 0b1101011: f = 0b010010;break;
+    case 0b1101100: f = 0b010011;break;
+    case 0b1101101: f = 0b010011;break;
+    case 0b1101110: f = 0b010011;break;
+    case 0b1101111: f = 0b010100;break;
+    case 0b1110000: f = 0b010100;break;
+    case 0b1110001: f = 0b010101;break;
+    case 0b1110010: f = 0b010101;break;
+    case 0b1110011: f = 0b010101;break;
+    case 0b1110100: f = 0b010110;break;
+    case 0b1110101: f = 0b010110;break;
+    case 0b1110110: f = 0b010110;break;
+    case 0b1110111: f = 0b010111;break;
+    case 0b1111000: f = 0b010111;break;
+    case 0b1111001: f = 0b011000;break;
+    case 0b1111010: f = 0b011000;break;
+    case 0b1111011: f = 0b011000;break;
+    case 0b1111100: f = 0b011001;break;
+    case 0b1111101: f = 0b011001;break;
+    case 0b1111110: f = 0b011001;break;
+    case 0b1111111: f = 0b011010;break;
+    default: f = 0;
+  }
+  return (f << 17);
+}
 
 
 int main(int argc, char **argv)
@@ -314,12 +454,20 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x30:      // sqrt_init
               {
-                uint32_t s_, e_;
+                uint32_t s, e, e_, m,  m_;
                 b.f = $fa;
-                s_ = b.ui32 & 0x80000000;
-                e_ = b.ui32 & 0x7f800000;
-                e_ = (e_ >> 1) + (64 << 23);
-                b.ui32 = s_ | e_;
+                s  = b.ui32 & 0x80000000;
+                e  = (b.ui32 >> 23) & 0x000000ff;
+                m  = b.ui32 &  0x007fffff;
+               // printf("s = %d\n", s);
+               // printf("e = %d\n", e);
+               // printf("m = %d\n", m);
+                m_ = sqrt_init_m (e & 1, m);
+                e_ = ((e - 1) >> 1) + 64;
+               // printf("e_ = %d\n", e_);
+               // printf("m_ = %d\n", m_);
+                b.ui32 = s | (e_ << 23) | m_;
+                printf("f = %f\n", b.f);
                 $fd = b.f;
               }
             case 0x38:      // finv_init
