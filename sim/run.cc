@@ -246,6 +246,17 @@ int main(int argc, char **argv)
                 b.ui32 = s_ | e_;
                 $fd = b.f;
               }
+            case 0x38:      // finv_init
+              {
+                uint32_t s_, e_;
+                b.f = $fa;
+                s_ = b.ui32 & 0x80000000;
+                e_ = b.ui32 & 0x7f800000;
+                e_ = (127 << 23) - e_;
+                e_ += (127 << 23);
+                b.ui32 = s_ | e_;
+                $fd = b.f;
+              }
               pc++; break;
             default:
               printf("Unknown funct: 0x%x.\n", get_func(inst));

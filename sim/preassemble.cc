@@ -86,7 +86,7 @@ void subst_labels(std::string infile, std::string outfile)
       if (vv.size() == 1) ofs << s << std::endl;  // line without ha16
       else if (vv.size() == 2) {
         std::string ss = split(vv[1], ")")[0];
-        uint32_t n = (uint32_t)label_inst_list.at(ss) & 0xffff0000;
+        uint32_t n = ((uint32_t)label_inst_list.at(ss)) >> 16;
         ofs << opcode << " " << v[1] << " " << std::to_string(n) << "\t\t\t# " << ss << "\n";
       }
       else if (vv.size() > 2) {

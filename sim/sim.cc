@@ -364,6 +364,17 @@ void exec_inst_silent(void)
               b.ui32 = s_ | e_;
               $fd = b.f;
             }
+          case 0x38:      // finv_init
+            {
+              uint32_t s_, e_;
+              b.f = $fa;
+              s_ = b.ui32 & 0x80000000;
+              e_ = b.ui32 & 0x7f800000;
+              e_ = (127 << 23) - e_;
+              e_ += (127 << 23);
+              b.ui32 = s_ | e_;
+              $fd = b.f;
+            }
             pc++; break;
           default:
             printf("Unknown funct: 0x%x.\n", get_func(inst));
@@ -558,6 +569,17 @@ void exec_inst_silent(long max_count)
               s_ = b.ui32 & 0x80000000;
               e_ = b.ui32 & 0x7f800000;
               e_ = (e_ >> 1) + (64 << 23);
+              b.ui32 = s_ | e_;
+              $fd = b.f;
+            }
+          case 0x38:      // finv_init
+            {
+              uint32_t s_, e_;
+              b.f = $fa;
+              s_ = b.ui32 & 0x80000000;
+              e_ = b.ui32 & 0x7f800000;
+              e_ = (127 << 23) - e_;
+              e_ += (127 << 23);
               b.ui32 = s_ | e_;
               $fd = b.f;
             }
@@ -770,6 +792,19 @@ enum Comm exec_inst(uint32_t inst)
             s_ = b.ui32 & 0x80000000;
             e_ = b.ui32 & 0x7f800000;
             e_ = (e_ >> 1) + (64 << 23);
+            b.ui32 = s_ | e_;
+            $fd = b.f;
+          }
+          pc++; break;
+        case 0x38:      // finv_init
+          if (!test_flag) sprintf(s, "finv_init f%d f%d\n", get_rd(inst), get_ra(inst));
+          {
+            uint32_t s_, e_;
+            b.f = $fa;
+            s_ = b.ui32 & 0x80000000;
+            e_ = b.ui32 & 0x7f800000;
+            e_ = (127 << 23) - e_;
+            e_ += (127 << 23);
             b.ui32 = s_ | e_;
             $fd = b.f;
           }
