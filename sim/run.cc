@@ -115,7 +115,7 @@ void init_inst(char *pathname)
   return;
 }
 
-//XXX: fpuのcopy (for performance) (as of 13 Nov)
+//XXX: fpuのcopy (for performance) (as of 25 Nov)
 #define MINPREC 6
 #define MOUTPREC 6
 #define SQRT_LOOP_COUNT 20
