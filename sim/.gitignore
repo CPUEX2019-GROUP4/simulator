@@ -7,3 +7,4 @@ input.bin
 *.s
 *.ppm
 labelstat
+*.bak

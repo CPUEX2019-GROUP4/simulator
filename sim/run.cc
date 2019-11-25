@@ -118,8 +118,8 @@ void init_inst(char *pathname)
 //XXX: fpuのcopy (for performance) (as of 25 Nov)
 #define MINPREC 6
 #define MOUTPREC 6
-#define SQRT_LOOP_COUNT 20
-#define FINV_LOOP_COUNT 20
+#define SQRT_LOOP_COUNT 2
+#define FINV_LOOP_COUNT 2
 
 #define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
 
