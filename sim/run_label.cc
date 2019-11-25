@@ -55,10 +55,11 @@ union bits {
   } lohi;
 } b;
 
-//XXX: fpuのcopy (for performance) (as of 13 Nov)
+//XXX: fpuのcopy (for performance) (as of 25 Nov)
 #define MINPREC 6
 #define MOUTPREC 6
 #define SQRT_LOOP_COUNT 2
+#define FINV_LOOP_COUNT 2
 
 #define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
 
@@ -82,6 +83,36 @@ uint32_t sqrt_init_u(float f) {
 float sqrt_init(float f) {
     b.ui32 = sqrt_init_u(f);
     return b.f;
+}
+
+uint32_t finv_init_m(uint32_t m) {
+    b.ui32 = (m & MUSE(MINPREC)) | 0x3f800000;
+    b.f = 2.0f / b.f;
+    uint32_t m_ = b.ui32 & MUSE(MOUTPREC);
+    return m_;
+}
+
+uint32_t finv_init_u(float f) {
+    b.f = f;
+    uint32_t u = b.ui32;
+    uint32_t s = u & 0x80000000, e = (u >> 23) & 0x000000ff, m = u & 0x007fffff;
+    uint32_t m_ = finv_init_m(m);
+    uint32_t e_ = ((253 - e) & 0x000000ff) + (m & MUSE(MINPREC) ? 0 : 1);
+    uint32_t u_ = s | (e_ << 23) | m_;
+    return u_;
+}
+
+float finv_init(float f) {
+    b.ui32 = finv_init_u(f);
+    return b.f;
+}
+
+float mfinv(float x, float init) {
+    float t = init;
+    for (int i = 0; i < FINV_LOOP_COUNT; i++) {
+        t = t * (2 - x * t);
+    }
+    return t;
 }
 //XXX: end of copy
 
@@ -281,17 +312,9 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x30:      // sqrt_init
               $fd = sqrt_init($fa);
-              /*
-              {
-                uint32_t s_, e_;
-                b.f = $fa;
-                s_ = b.ui32 & 0x80000000;
-                e_ = b.ui32 & 0x7f800000;
-                e_ = (e_ >> 1) + (64 << 23);
-                b.ui32 = s_ | e_;
-                $fd = b.f;
-              }
-              */
+              pc++; break;
+            case 0x38:      // finv_init
+              $fd = finv_init($fa);
               pc++; break;
             default:
               printf("Unknown funct: 0x%x.\n", get_func(inst));
