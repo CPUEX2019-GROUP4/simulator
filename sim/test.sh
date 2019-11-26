@@ -29,6 +29,14 @@ if [ $# = 3 ]; then
     echo -e "\x1b[1mcounting mode!!\x1b[0m"
     cp run_label.cc run_label.cc.bak
     sed -i "s&// $3\$&// $3\ninst_counter++;&g" run_label.cc
+
+    diff=$(diff run_label.cc run_label.cc.bak)
+    echo $diff
+    if [[ $diff = "" ]]; then
+      echo "Invalid operand. No such opcode as: $3. Abort."
+      exit 1
+    fi
+
     make
     execute $1 $2 ./run_label
     echo -e "counter was for \x1b[1m$3\x1b[0m" ; mv run_label.cc.bak run_label.cc ;
