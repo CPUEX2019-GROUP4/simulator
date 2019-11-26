@@ -27,19 +27,20 @@ if [ $# = 3 ]; then
   else
     # assume $3 is an instruction to inspect count
     echo -e "\x1b[1mcounting mode!!\x1b[0m"
-    cp run_label.cc run_label.cc.bak
+    cp run_label.cc run_label.cc.bak    # back up
     sed -i "s&// $3\$&// $3\ninst_counter++;&g" run_label.cc
 
     diff=$(diff run_label.cc run_label.cc.bak)
-    echo $diff
     if [[ $diff = "" ]]; then
       echo "Invalid operand. No such opcode as: $3. Abort."
       exit 1
     fi
 
+    make run_label
+    mv run_label.cc.bak run_label.cc ;  # restore
     make
     execute $1 $2 ./run_label
-    echo -e "counter was for \x1b[1m$3\x1b[0m" ; mv run_label.cc.bak run_label.cc ;
+    echo -e "counter was for \x1b[1m$3\x1b[0m"
   fi
 fi
 
