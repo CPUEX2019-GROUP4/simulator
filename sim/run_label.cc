@@ -45,6 +45,7 @@ std::ofstream ofs;                // OUT 命令の出力ファイル
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 long r29_max, r30_max;
+unsigned long inst_counter = 0;                // 命令実行回数の統計に使う
 
 union bits {
   float f;
@@ -444,6 +445,10 @@ int main(int argc, char **argv)
   puts("\nsimulator terminated");
   std::cout <<"total executed instructions: " << FormatWithCommas(total_executed) << std::endl;
   //printf("max sp(r29): %ld, max hp(r30): %ld\n", r29_max, r30_max);
+
+  // XXX: inst count
+  if (inst_counter != 0) std::cout << "inst counter: \x1b[1m" << inst_counter << "\x1b[0m\n";
+  // end of inst count
 
   free(inst_reg);
   ofs.flush();

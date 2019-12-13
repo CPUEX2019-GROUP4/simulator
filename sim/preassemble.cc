@@ -78,7 +78,7 @@ void subst_labels(std::string infile, std::string outfile)
       int n = label_inst_list.at(v[3]) - line_inst_list[l] - 1;
       if (n >= 32768 || n < -32768) { // if |n| is too large
         std::cerr << "beq/bne operand is too large. (line: " << l << ", label: " << v[3] << ", val: " << n << "\n";
-        ofs << opcode << " " << v[1] << " " << v[2] << " 1\n" << "\t\t\t# (splited)\n";
+        ofs << opcode << " " << v[1] << " " << v[2] << " 1" << "\t\t\t# (splited)\n";
         ofs << "j 1\n";
         ofs << "j " << std::to_string(n+1) << "\t\t\t# " << v[3] << "\n";
       }
