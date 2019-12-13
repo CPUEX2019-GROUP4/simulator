@@ -7,7 +7,7 @@ TARGETS = $(SRCS:%.cc=%)
 
 all: sim run swap assemble preassemble run_label
 
-%.o: %.c
+%.o: %.cc
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 preassemble: $(OBJS) preassemble.o

@@ -9,8 +9,8 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
-#include <iomanip>
-#include <locale>
+
+#include "stringutils.hh"
 
 #define BYTES_INSTRUCTION 4
 #define LEN_INSTRUCTION 2000000
@@ -50,15 +50,6 @@ union bits {
     uint16_t hi;
   } lohi;
 } b;
-
-template<class T>
-std::string FormatWithCommas(T value)
-{
-  std::stringstream ss;
-  ss.imbue(std::locale(""));
-  ss << std::fixed << value;
-  return ss.str();
-}
 
 inline void init_ofs(char *path)
 {

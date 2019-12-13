@@ -1,6 +1,11 @@
 #include <iostream>
 #include <cstdio>
 #include <vector>
+#include <iomanip>
+#include <locale>
+#include <string>
+#include <sstream>
+
 #include "stringutils.hh"
 
 /**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
