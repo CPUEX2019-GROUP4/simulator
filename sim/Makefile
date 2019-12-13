@@ -25,8 +25,11 @@ run: $(OBJS) run.o
 run_label: $(OBJS) run_label.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+swap: swap.c
+	$(CC) $(LDFLAGS) $< -o $@
+
 clean:
-	rm $(OBJS) sim run swap assemble preassemble run_label sim.o run.o swap.o assemble.o preassemble.o run_label.o
+	rm $(OBJS) sim run swap assemble preassemble run_label sim.o run.o assemble.o preassemble.o run_label.o
 
 #sim: sim.cc
 #	$(CC) $(LDFLAGS) $< -o $@

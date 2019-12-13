@@ -13,7 +13,7 @@
 #include <locale>
 
 #define BYTES_INSTRUCTION 4
-#define LEN_INSTRUCTION 200000
+#define LEN_INSTRUCTION 2000000
 #define N_REG 32
 #define SIZE_MEM (2<<20)
 
