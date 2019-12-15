@@ -106,36 +106,13 @@ void init_inst(char *pathname)
   return;
 }
 
-//XXX: fpuのcopy (for performance) (as of 25 Nov)
-#define MINPREC 6
-#define MOUTPREC 6
-#define SQRT_LOOP_COUNT 2
-#define FINV_LOOP_COUNT 2
+//XXX: fpuのcopy (for performance) (as of 15 Dec)
+#define MINPREC 11
+#define MOUTPREC 11
+#define FINV_LOOP_COUNT 1
+#define SQRT_LOOP_COUNT 1
 
 #define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
-
-uint32_t sqrt_init_m(uint32_t emod2, uint32_t m) {
-    b.ui32 = (m & MUSE(MINPREC)) | (emod2 ? 0x3f800000 : 0x40000000);
-    b.f = sqrtf(b.f);
-    uint32_t m_ = b.ui32 & MUSE(MOUTPREC);
-    return m_;
-}
-
-uint32_t sqrt_init_u(float f) {
-    b.f = f;
-    uint32_t u = b.ui32;
-    uint32_t s = u & 0x80000000, e = (u >> 23) & 0x000000ff, m = u & 0x007fffff;
-    if (e == 0) return 0;
-    uint32_t m_ = sqrt_init_m(e & 1, m);
-    uint32_t e_ = ((e - 1) >> 1) + 64;
-    uint32_t u_ = s | (e_ << 23) | m_;
-    return u_;
-}
-
-float sqrt_init(float f) {
-    b.ui32 = sqrt_init_u(f);
-    return b.f;
-}
 
 uint32_t finv_init_m(uint32_t m) {
     b.ui32 = (m & MUSE(MINPREC)) | 0x3f800000;
@@ -160,13 +137,30 @@ float finv_init(float f) {
     return b.f;
 }
 
-float mfinv(float x, float init) {
-    float t = init;
-    for (int i = 0; i < FINV_LOOP_COUNT; i++) {
-        t = t * (2 - x * t);
-    }
-    return t;
+uint32_t sqrt_inv_init_m(uint32_t emod2, uint32_t m) {
+    b.ui32 = (m & MUSE(MINPREC)) | (emod2 ? 0x3f800000 : 0x40000000);
+    b.f = 2 / sqrtf(b.f);
+    uint32_t m_ = b.ui32 & MUSE(MOUTPREC);
+    return m_;
 }
+
+uint32_t sqrt_inv_init_u(float f) {
+    b.f = f;
+    uint32_t u = b.ui32;
+    uint32_t s = u & 0x80000000, e = (u >> 23) & 0x000000ff, m = u & 0x007fffff;
+    if (e == 0) return 0;
+    uint32_t m_ = sqrt_inv_init_m(e & 1, m);
+    uint32_t e_ = 189 - ((e - 1) >> 1) + (!(m & MUSE(MINPREC)) && (e & 1) ? 1 : 0);
+    uint32_t u_ = s | (e_ << 23) | m_;
+    return u_;
+}
+
+//float sqrt_inv_init(float f) {
+float sqrt_init(float f) {
+    b.ui32 = sqrt_inv_init_u(f);
+    return b.f;
+}
+
 //XXX: end of copy
 
 uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
