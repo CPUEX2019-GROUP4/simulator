@@ -111,7 +111,7 @@ void init_inst(char *pathname)
 #define FINV_MINPREC 11
 #define FINV_LOOP_COUNT 1
 #define SQRT_LOOP_COUNT 1
-#define SQRT_MINPREC 11
+#define SQRT_MINPREC 10
 
 #define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
 
