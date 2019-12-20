@@ -124,7 +124,7 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("inint")) ret = encode_r(0x18, 0x00, $r(1), 0x00, 0x00, 0x00);
   else if (!op.compare("inflt")) ret = encode_r(0x19, 0x00, $r(1), 0x00, 0x00, 0x00);
 
-  else {std::cerr << "\033[1m Unknown instruction. Abort.\033[m" << /*inst <<*/ std::endl; exit(1);}
+  else {std::cerr << "\033[1m Unknown instruction: "; throw op;}
 
   return ret;
 }
