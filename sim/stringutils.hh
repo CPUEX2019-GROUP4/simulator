@@ -1,5 +1,12 @@
 #pragma once
 
+#include <string>
+#include <sstream>
+#include <vector>
+#include <iostream>
+#include <iomanip>
+#include <locale>
+
 /**--- std::string をdelimiterで分割してstd::vectorで返す ---*/
 std::vector<std::string> split(std::string s, std::string delimiter,
                                bool shrink = true);

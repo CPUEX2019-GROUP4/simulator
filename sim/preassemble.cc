@@ -8,8 +8,11 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cctype>
+#include <algorithm>  // std::all_of
 
 #include "stringutils.hh"
+#include "format.hh"
 
 std::unordered_map<int,int> line_inst_list;
 std::unordered_map<int,int> inst_line_list;
@@ -68,7 +71,6 @@ void subst_labels(std::string infile, std::string outfile)
     if (!s.compare("")) {std::cout << "nothing\n"; continue;}
 
     std::string opcode = v[0];
-    std::string str;
 
     if (!opcode.compare("jal") || !opcode.compare("j")) ofs << opcode << " " << label_inst_list.at(v[1]) << "\t\t\t# " << v[1] << "\n";
     else if (!opcode.compare("bc1f") || !opcode.compare("bc1t")) {
@@ -177,6 +179,7 @@ int main(int argc, char **argv)
   output_inst(line_inst_list);
   output_labels(label_inst_list);
   subst_labels(in, out);
+  format_check(out);
   std::cout << "Preassembled successfully.\n";
   std::cout << in << " ==> " << out << std::endl;
 
