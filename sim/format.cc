@@ -60,12 +60,30 @@ void format_check(std::string infile)
 
     std::string opcode = v[0];  // opcode
 
-    for (int i=1; i<(int)v.size(); i++) {
+    //for (int i=1; i<(int)v.size(); i++) {
+    for (int i=1; i<=3; i++) {
+      if (table[opcode][i-1] == N) {
+        if ((int)v.size() > i) {
+          std::cerr << "Too many operands at line: " << l << ".\n";
+          std::cerr << "the instruction is: " << s << ".\n";
+          //pass = 0;
+          exit(1);
+        }
+        break;
+      }
+      else {  // expecting some operand
+        if ((int)v.size() <= i) {
+          if (table[opcode][i-1] == O) break; // XXX: forgive
+          std::cerr << "Too few operands at line: " << l << ".\n";
+          std::cerr << "the instruction is: " << s << ".\n";
+          //pass = 0;
+          exit(1);
+        }
+      }
       v[i] = split(v[i], "\t")[0];      // tabs are not separator b/w operands,
                                         // so just take the first element
-      //std::cout << "i: " << i << "type(v[i]) = " << type(v[i]) << "table: " << table[opcode][i-1] << "\n";
-      //std::cout << "v[i]=" << v[i] << ".\n";
       if (type(v[i]) != table[opcode][i-1]) { //XXX: type `N` is not used
+        if (table[opcode][i-1] == O) break; // XXX: forgive
         std::cerr << "Found invalid operand type at line " << l << ".\n";
         std::cerr << "the instruction is: " << s << ".\n";
         exit(1);
@@ -73,6 +91,95 @@ void format_check(std::string infile)
     }
   }
   std::cout << "operand type check ok.\n";
+  ifs.close();
+  return;
+}
+
+
+void format_check_validate(std::string infile)
+{
+
+  std::unordered_map<std::string, std::vector<std::string>> results;
+
+  std::ifstream ifs(infile, std::ios::in);
+  if (ifs.fail()) {std::cerr << "File " << infile << " cannot be opened. Abort\n"; exit(1);}
+
+  std::string s;
+  std::vector<std::string> v;
+
+  int l = 0;  // line number
+
+  init_table();
+
+  while (1) {
+    l++;
+    if (!std::getline(ifs, s)) break;
+    std::string ss = split(s, "#", false)[0]; // 行の途中のコメントは削除
+    v = split(ss, " ");
+    if (v.empty()) continue; // comment line or empty line
+    std::vector<std::string> vv = split(s + "foo", ":", false);
+    if (vv.size() > 1) continue;  // label declaration
+    if (!s.compare("")) {std::cout << "nothing\n"; continue;}
+
+    if (v.size() > 4) {
+      std::cerr << "too many operands at line: " << l << ".\n";
+      std::cerr << "the instruction is: " << s << ".\n";
+      exit(1);
+    }
+
+    std::string opcode = v[0];  // opcode
+    int pass = 1;
+
+    //for (int i=1; i<(int)v.size(); i++) {
+    for (int i=1; i<=3; i++) {
+      if (table[opcode][i-1] == N) {
+        if ((int)v.size() > i) {
+          std::cerr << "Too many operands at line: " << l << ".\n";
+          std::cerr << "the instruction is: " << s << ".\n";
+          pass = 0;
+        }
+        break;
+      }
+      else {  // expecting some operand
+        if ((int)v.size() <= i) {
+          if (table[opcode][i-1] == O) break; // XXX: forgive
+          std::cerr << "Too few operands at line: " << l << ".\n";
+          std::cerr << "the instruction is: " << s << ".\n";
+          pass = 0;
+          break;
+        }
+      }
+
+      //std::cout << "checking: " << s << ", i=" << i << ".\n";
+
+      v[i] = split(v[i], "\t")[0];      // tabs are not separator b/w operands,
+                                        // so just take the first element
+      if (type(v[i]) != table[opcode][i-1]) { //XXX: type `N` is not used
+        if (table[opcode][i-1] == O) break; // XXX: forgive
+        //std::cerr << "\033[1m" << "invalid: " << s <<  "\033[m" ".\n";
+        //exit(1);
+        pass = 0;
+        break;
+      }
+      /*
+      else {
+        std::cout << "v[i]: " << v[i] << " type(v[i])=" << type(v[i]) << " talble: " << table[opcode][i-1] << ".\n";
+      }
+      */
+    }
+    if (pass) {
+      std::cout << "pushing: " << s << ".\n";
+      results[opcode].push_back(s);
+    }
+  }
+
+  std::cout << "\033[1m" "SUMMARY" "\033[m" "\n";
+
+  for (auto it : results) {
+    std::cout << "\033[1m" << it.first << "\033[m" << "\n";
+      for (auto itt : it.second) std::cout << itt << std::endl;
+  }
+  //std::cout << "operand type check ok.\n";
   ifs.close();
   return;
 }
@@ -126,8 +233,10 @@ void init_table()
   ASSIGN(out, R, I, N);
   //ASSIGN(inint, R, N, N);
   //ASSIGN(inflt, F, N, N);
-  ASSIGN(inint, R, R, N); // XXX
-  ASSIGN(inflt, F, R, N); // XXX
+  //ASSIGN(inint, R, R, N); // XXX
+  //ASSIGN(inflt, F, R, N); // XXX
+  ASSIGN(inint, R, O, N); // XXX
+  ASSIGN(inflt, F, O, N); // XXX
 
 #undef ASSIGN
 #undef T

@@ -151,6 +151,7 @@ void output_labels(std::unordered_map<std::string,int> label_inst_list, std::str
 
 void test()
 {
+  /*
   std::string s = "    #aaa";
     s = split(s, "#", false)[0]; // 行の途中のコメントは削除
     std::vector<std::string> v = split(s, " ");
@@ -162,6 +163,7 @@ void test()
     std::cout << it << std::endl;
   }
   //std::cout << s << std::endl;
+  */
 }
 
 int main(int argc, char **argv)
@@ -174,6 +176,11 @@ int main(int argc, char **argv)
   if (argc >= 2) in = argv[1];
   if (argc == 3) out = argv[2];
   if (argc > 3) {std::cerr << "USAGE: " << argv[0] << "{{in_file}} {{preassembled_file}}\n"; exit(1);}
+
+  // XXX
+  //format_check_validate("test.s");
+  //format_check_validate("t.s");
+  //return 1;
 
   gather(in);
   output_inst(line_inst_list);
