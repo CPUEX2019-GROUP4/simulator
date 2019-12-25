@@ -3,6 +3,7 @@
 #include <cstring>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <vector>
 #include <iostream>
 #include <string>
@@ -47,11 +48,11 @@ std::array<unsigned char, SIZE_MEM> mem;           // memory
 int32_t fcond_reg;
 
 // Meta variables
-std::unordered_set<int> regs_to_show;    // 表示させるレジスタたち
-std::unordered_set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
-std::unordered_set<long> address_to_show;   // メモリアドレス
-std::unordered_set<long> intaddress_to_show;   // メモリアドレス(int)
-std::unordered_set<long> fltaddress_to_show;   // メモリアドレス(flt)
+std::set<int> regs_to_show;    // 表示させるレジスタたち
+std::set<int> fregs_to_show;   // (浮動小数)表示させるレジスタたち
+std::set<long> address_to_show;   // メモリアドレス
+std::set<long> intaddress_to_show;   // メモリアドレス(int)
+std::set<long> fltaddress_to_show;   // メモリアドレス(flt)
 uint32_t total_inst = 0;
 int dest_reg;                     // 各命令のdestination_register
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
@@ -137,7 +138,7 @@ float sqrt_init(float f) {
 void init(void)
 {
   breakpoint = -1;
-  dest_reg = -1;
+  dest_reg = -100;
 }
 
 void init_ofs(char *path)
@@ -246,9 +247,7 @@ void print_regs(void)
 {
   int count = 0;
   // XXX: 1: r1 = 3         2: f4 = 3.141592 のように表示する。
-  char s[80];
   int len;
-  static const int offset = 20;
   auto itr = regs_to_show.begin();
   auto itf = fregs_to_show.begin();
   while (1) {
@@ -257,21 +256,28 @@ void print_regs(void)
         break;
       }
       else {
+        if (*itf == -dest_reg) printf("\x1b[1m");
         printf("\t                    "
                "\t%d: f%d = %f\n",  ++count, *itf, float_reg[*itf]);
+        if (*itf == -dest_reg) printf("\x1b[0m");
         itf++;
       }
     }
     else {
       if (itf == fregs_to_show.end()) {
+        if (*itr == dest_reg) printf("\x1b[1m");
         printf("\t%d: r%d = %d\n",  ++count, *itr, int_reg[*itr]);
+        if (*itr == dest_reg) printf("\x1b[0m");
         itr++;
       }
       else {
-        len = sprintf(s, "\t%d: r%d = %d",  ++count, *itr, int_reg[*itr]);
-        for (int i=len; i<20; i++) s[i] = ' ';
-        sprintf(s+offset, "\t%d: f%d = %f\n",  ++count, *itf, float_reg[*itf]);
-        printf("%s", s);
+        if (*itr == dest_reg) printf("\x1b[1m");
+        len = printf("\t%d: r%d = %d",  ++count, *itr, int_reg[*itr]);
+        if (*itr == dest_reg) printf("\x1b[0m");
+        for (int i=len; i<20; i++) putchar(' ');
+        if (*itf == -dest_reg) printf("\x1b[1m");
+        printf("\t%d: f%d = %f\n",  ++count, *itf, float_reg[*itf]);
+        if (*itf == -dest_reg) printf("\x1b[0m");
         itr++; itf++;
       }
     }
@@ -741,6 +747,8 @@ Comm exec_inst(uint32_t inst)
 
   //char s[256];
 
+  set_bold(get_rd(inst));     // 太字表記するため
+
   switch (get_opcode(inst)) {
     case 0x00:      /* R type */
       switch (get_func(inst)) {
@@ -777,10 +785,12 @@ Comm exec_inst(uint32_t inst)
           $rd = $ra << get_shift(inst);
           pc++; break;
         case 0x08:      // jr
+          reset_bold();
           if (!test_flag) printf("jr r%d\n", get_rd(inst));
           pc = $rd;
           break;
         case 0x0f:      // jalr
+          set_bold(31);
           if (!test_flag) printf("jalr r%d\n", get_rd(inst));
           int_reg[31] = pc + 1;
           pc = $rd;
@@ -796,6 +806,7 @@ Comm exec_inst(uint32_t inst)
       }
       break;
     case 0x11:      /* floating point */
+      set_bold(-get_rd(inst));     // 太字表記するため
       switch (get_func(inst)) {
         case 0x10:      // fneg
           if (!test_flag) printf("fneg f%d f%d\n", get_rd(inst), get_ra(inst));
@@ -818,11 +829,13 @@ Comm exec_inst(uint32_t inst)
           $fd = $fa / $fb;
           pc++; break;
         case 0x20:      // fclt
+          reset_bold();
           if (!test_flag) printf("fclt f%d f%d\n", get_ra(inst), get_rb(inst));
           if ($fa < $fb) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
           pc++; break;
         case 0x28:      // fcz
+          reset_bold();
           if (!test_flag) printf("fcz f%d \n", get_ra(inst));
           if ($fa == 0.0) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
@@ -926,11 +939,13 @@ Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x1d:      // itof
+      set_bold(-get_rd(inst));
       if (!test_flag) printf("itof f%d r%d\n", get_rd(inst), get_ra(inst));
       $fd = (float) $ra;
       pc++;
       break;
     case 0x3c:      // flui
+      set_bold(-get_rd(inst));
       if (!test_flag) printf("flui f%d %d\n", get_rd(inst), get_imm(inst));
       b.lohi.hi = get_imm(inst);
       b.lohi.lo = 0;
@@ -962,6 +977,7 @@ Comm exec_inst(uint32_t inst)
       pc++;
       break;
     case 0x19:      // inflt
+      set_bold(-get_rd(inst));
       if (!test_flag) printf("inflt f%d\n", get_rd(inst));
       {
         int cc = fread((char*)&($fd), 4, 1, fin);
