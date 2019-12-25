@@ -245,6 +245,38 @@ int monitor(void)
 void print_regs(void)
 {
   int count = 0;
+  // XXX: 1: r1 = 3         2: f4 = 3.141592 のように表示する。
+  char s[80];
+  int len;
+  static const int offset = 20;
+  auto itr = regs_to_show.begin();
+  auto itf = fregs_to_show.begin();
+  while (1) {
+    if (itr == regs_to_show.end()) {
+      if (itf == fregs_to_show.end()) {
+        break;
+      }
+      else {
+        printf("\t                    "
+               "\t%d: f%d = %f\n",  ++count, *itf, float_reg[*itf]);
+        itf++;
+      }
+    }
+    else {
+      if (itf == fregs_to_show.end()) {
+        printf("\t%d: r%d = %d\n",  ++count, *itr, int_reg[*itr]);
+        itr++;
+      }
+      else {
+        len = sprintf(s, "\t%d: r%d = %d",  ++count, *itr, int_reg[*itr]);
+        for (int i=len; i<20; i++) s[i] = ' ';
+        sprintf(s+offset, "\t%d: f%d = %f\n",  ++count, *itf, float_reg[*itf]);
+        printf("%s", s);
+        itr++; itf++;
+      }
+    }
+  }
+  /*
   for (auto it : regs_to_show) {
     if (it == dest_reg) printf("\x1b[1m");
     printf("\t%d: r%d = %d\n", ++count, it, int_reg[it]);
@@ -253,6 +285,7 @@ void print_regs(void)
   for (auto it : fregs_to_show) {
     printf("\t%d: f%d = %f\n",  ++count, it, float_reg[it]);
   }
+  */
   for (auto it : address_to_show) {
     printf("\t%d: M[%ld] = %d\n", ++count, it, mem.at(it));
   }
