@@ -188,6 +188,9 @@ void init_table()
 {
 #define T(str) table[#str]
 #define ASSIGN(e,a,b,c) do {T(e)[0] = a; T(e)[1] = b; T(e)[2] = c;} while(0)
+  // 2nd
+  ASSIGN(lwab, R, R, R);
+  ASSIGN(swab, R, R, R);
   // general register
   ASSIGN(nop, N, N, N);
   ASSIGN(add, R, R, R);

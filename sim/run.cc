@@ -248,6 +248,12 @@ int main(int argc, char **argv)
               int_reg[31] = pc + 1;
               pc = $rd;
               break;
+            case 0x33:      // lwab
+              memcpy((unsigned char*)(&($rd)), &mem.at($ra+$rb), 4);
+              pc++; break;
+            case 0x3b:      // swab
+              memcpy(&mem.at($ra+$rb), (unsigned char*)(&($rd)), 4);
+              pc++; break;
             default:
               printf("Unknown funct: 0x%x.\n", get_func(inst));
               printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",

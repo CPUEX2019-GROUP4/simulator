@@ -84,6 +84,8 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("lw")) ret = encode_i(0x23, $r(1), $r(2), $(3));
   else if (!op.compare("sw")) ret = encode_i(0x2b, $r(1), $r(2), $(3));
   else if (!op.compare("lui")) ret = encode_i(0x0f, $r(1), 0x00, $(2));
+  else if (!op.compare("lwab")) ret = encode_r(0x00, 0x33, $r(1), $r(2), $r(3), 0x00);  // 2nd
+  else if (!op.compare("swab")) ret = encode_r(0x00, 0x3b, $r(1), $r(2), $r(3), 0x00);  // 2nd
   // Logic
   else if (!op.compare("or")) ret = encode_r(0x00, 0x25, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("ori")) ret = encode_i(0x0d, $r(1), $r(2), $(3));

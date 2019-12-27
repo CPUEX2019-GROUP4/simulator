@@ -398,6 +398,12 @@ Comm exec_inst_silent(void)
             int_reg[31] = pc + 1;
             pc = $rd;
             break;
+          case 0x33:      // lwab
+            memcpy((unsigned char*)(&($rd)), &mem.at($ra+$rb), 4);
+            pc++; break;
+          case 0x3b:      // swab
+            memcpy(&mem.at($ra+$rb), (unsigned char*)(&($rd)), 4);
+            pc++; break;
           default:
             printf("Unknown funct: 0x%x.\n", get_func(inst));
             printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
@@ -592,6 +598,12 @@ Comm exec_inst_silent(long max_count)
             int_reg[31] = pc + 1;
             pc = $rd;
             break;
+          case 0x33:      // lwab
+            memcpy((unsigned char*)(&($rd)), &mem.at($ra+$rb), 4);
+            pc++; break;
+          case 0x3b:      // swab
+            memcpy(&mem.at($ra+$rb), (unsigned char*)(&($rd)), 4);
+            pc++; break;
           default:
             printf("Unknown funct: 0x%x.\n", get_func(inst));
             printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
@@ -795,6 +807,14 @@ Comm exec_inst(uint32_t inst)
           int_reg[31] = pc + 1;
           pc = $rd;
           break;
+        case 0x33:      // lwab
+          if (!test_flag) printf("lwab r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          memcpy((unsigned char*)(&($rd)), &mem.at($ra+$rb), 4);
+          pc++; break;
+        case 0x3b:      // swab
+          if (!test_flag) printf("swab r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          memcpy(&mem.at($ra+$rb), (unsigned char*)(&($rd)), 4);
+          pc++; break;
         default:
           reset_bold();
           printf("Unknown funct: 0x%x.\n", get_func(inst));
