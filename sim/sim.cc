@@ -447,6 +447,12 @@ Comm exec_inst_silent(void)
           case 0x38:      // finv_init
             $fd = finv_init($fa);
             pc++; break;
+          case 0x33:      // flwab
+            memcpy((unsigned char*)(&($fd)), &mem.at($ra + $rb), 4);
+            pc++; break;
+          case 0x3b:      // fswab
+            memcpy(&mem.at($ra + $rb), (unsigned char*)(&($fd)), 4);
+            pc++; break;
           default:
             printf("Unknown funct: 0x%x.\n", get_func(inst));
             printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",
@@ -646,6 +652,12 @@ Comm exec_inst_silent(long max_count)
             pc++; break;
           case 0x38:      // finv_init
             $fd = finv_init($fa);
+            pc++; break;
+          case 0x33:      // flwab
+            memcpy((unsigned char*)(&($fd)), &mem.at($ra + $rb), 4);
+            pc++; break;
+          case 0x3b:      // fswab
+            memcpy(&mem.at($ra + $rb), (unsigned char*)(&($fd)), 4);
             pc++; break;
           default:
             printf("Unknown funct: 0x%x.\n", get_func(inst));
@@ -871,6 +883,14 @@ Comm exec_inst(uint32_t inst)
         case 0x38:      // finv_init
           if (!test_flag) printf("finv_init f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = finv_init($fa);
+          pc++; break;
+        case 0x33:      // flwab
+          if (!test_flag) printf("flwab f%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          memcpy((unsigned char*)(&($fd)), &mem.at($ra + $rb), 4);
+          pc++; break;
+        case 0x3b:      // fswab
+          if (!test_flag) printf("fswab f%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          memcpy(&mem.at($ra + $rb), (unsigned char*)(&($fd)), 4);
           pc++; break;
         default:
           reset_bold();

@@ -191,6 +191,10 @@ void init_table()
   // 2nd
   ASSIGN(lwab, R, R, R);
   ASSIGN(swab, R, R, R);
+  ASSIGN(flw, F, R, I);
+  ASSIGN(fsw, F, R, I);
+  ASSIGN(flwab, F, R, R);
+  ASSIGN(fswab, F, R, R);
   // general register
   ASSIGN(nop, N, N, N);
   ASSIGN(add, R, R, R);
@@ -221,8 +225,8 @@ void init_table()
   ASSIGN(fsub, F, F, F);
   ASSIGN(fmul, F, F, F);
   ASSIGN(fdiv, F, F, F);
-  ASSIGN(lwcZ, F, R, I);
-  ASSIGN(swcZ, F, R, I);
+  ASSIGN(lwcZ, F, R, I);  // XXX: temporary
+  ASSIGN(swcZ, F, R, I);  // XXX: temporary
   ASSIGN(fclt, F, F, N);
   ASSIGN(fcz, F, N, N);
   ASSIGN(bc1t, I, N, N);

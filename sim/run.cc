@@ -297,6 +297,12 @@ int main(int argc, char **argv)
             case 0x38:      // finv_init
               $fd = finv_init($fa);
               pc++; break;
+            case 0x33:      // flwab
+              memcpy((unsigned char*)(&($fd)), &mem.at($ra + $rb), 4);
+              pc++; break;
+            case 0x3b:      // fswab
+              memcpy(&mem.at($ra + $rb), (unsigned char*)(&($fd)), 4);
+              pc++; break;
             default:
               printf("Unknown funct: 0x%x.\n", get_func(inst));
               printf("opcode: 0x%d, rd: %d, ra: %d, rb: %d, shift: %d, func: 0x%x\n",

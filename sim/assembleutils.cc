@@ -120,6 +120,10 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("itof")) ret = encode_i(0x1d, $f(1), $r(2), 0x00);
   else if (!op.compare("flui")) ret = encode_i(0x3c, $f(1), 0x00, $(2));
   else if (!op.compare("fori")) ret = encode_i(0x3d, $f(1), $f(2), $(3));
+  else if (!op.compare("flwab")) ret = encode_r(0x11, 0x33, $f(1), $r(2), $r(3), 0x00);  // 2nd
+  else if (!op.compare("fswab")) ret = encode_r(0x11, 0x3b, $f(1), $r(2), $r(3), 0x00);  // 2nd
+  else if (!op.compare("flw")) ret = encode_i(0x30, $f(1), $r(2), $(3));  // 2nd
+  else if (!op.compare("fsw")) ret = encode_i(0x38, $f(1), $r(2), $(3));  // 2nd
   // Others
   else if (!op.compare("nop")) ret = encode_r(0x00, 0x00, 0x00, 0x00, 0x00, 0x00); // nop
   else if (!op.compare("out")) ret = encode_i(0x3f, $r(1), 0x00, $(2));
