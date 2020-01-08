@@ -253,6 +253,9 @@ int main(int argc, char **argv)
             case 0x00:      // sll
               $rd = $ra << get_shift(inst);
               pc++; break;
+            case 0x2b:      // seq
+              $rd = ($ra == $rb);
+              pc++; break;
             case 0x08:      // jr
               pc = $rd;
               if (get_rd(inst) != 31) label_stat(pc); // XXX: 'jr r31'は含めない
@@ -300,6 +303,10 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x28:      // fcz
               if ($fa == 0.0) fcond_reg |= 0x02;
+              else fcond_reg &= 0xfffd;
+              pc++; break;
+            case 0x29:      // feq
+              if ($fa == $fb) fcond_reg |= 0x02;
               else fcond_reg &= 0xfffd;
               pc++; break;
             case 0x06:      // fmv
@@ -350,6 +357,10 @@ int main(int argc, char **argv)
           if ($rd == $ra) pc += 1 + get_imm_signed(inst);
           else pc++;
           break;
+        case 0x06:      // blt
+          if ($rd < $ra) pc += 1 + get_imm_signed(inst);
+          else pc++;
+          break;
         case 0x05:      // bne
           if ($rd != $ra) pc += 1 + get_imm_signed(inst);
           else pc++;
@@ -378,6 +389,10 @@ int main(int argc, char **argv)
         case 0x15:      // bc1f
           if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
           else pc++;
+          break;
+        case 0x1e:      // fabs
+          $fd = ($fa) < 0 ? -($fa): ($fa);
+          pc++;
           break;
         case 0x1c:      // ftoi
           $rd = (int) ($fa);

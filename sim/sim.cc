@@ -391,6 +391,9 @@ Comm exec_inst_silent(void)
           case 0x00:      // sll
             $rd = $ra << get_shift(inst);
             pc++; break;
+          case 0x2b:      // seq
+            $rd = ($ra == $rb);
+            pc++; break;
           case 0x08:      // jr
             pc = $rd;
             break;
@@ -436,6 +439,10 @@ Comm exec_inst_silent(void)
             pc++; break;
           case 0x28:      // fcz
             if ($fa == 0.0) fcond_reg |= 0x02;
+            else fcond_reg &= 0xfffd;
+            pc++; break;
+          case 0x29:      // feq
+            if ($fa == $fb) fcond_reg |= 0x02;
             else fcond_reg &= 0xfffd;
             pc++; break;
           case 0x06:      // fmv
@@ -486,6 +493,10 @@ Comm exec_inst_silent(void)
         if ($rd == $ra) pc += 1 + get_imm_signed(inst);
         else pc++;
         break;
+      case 0x06:      // blt
+        if ($rd < $ra) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
       case 0x05:      // bne
         if ($rd != $ra) pc += 1 + get_imm_signed(inst);
         else pc++;
@@ -512,6 +523,10 @@ Comm exec_inst_silent(void)
       case 0x15:      // bc1f
         if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
         else pc++;
+        break;
+      case 0x1e:      // fabs
+        $fd = ($fa) < 0 ? -($fa): ($fa);
+        pc++;
         break;
       case 0x1c:      // ftoi
         $rd = (int) ($fa);
@@ -597,6 +612,9 @@ Comm exec_inst_silent(long max_count)
           case 0x00:      // sll
             $rd = $ra << get_shift(inst);
             pc++; break;
+          case 0x2b:      // seq
+            $rd = ($ra == $rb);
+            pc++; break;
           case 0x08:      // jr
             pc = $rd;
             break;
@@ -642,6 +660,10 @@ Comm exec_inst_silent(long max_count)
             pc++; break;
           case 0x28:      // fcz
             if ($fa == 0.0) fcond_reg |= 0x02;
+            else fcond_reg &= 0xfffd;
+            pc++; break;
+          case 0x29:      // feq
+            if ($fa == $fb) fcond_reg |= 0x02;
             else fcond_reg &= 0xfffd;
             pc++; break;
           case 0x06:      // fmv
@@ -692,6 +714,10 @@ Comm exec_inst_silent(long max_count)
         if ($rd == $ra) pc += 1 + get_imm_signed(inst);
         else pc++;
         break;
+      case 0x06:      // blt
+        if ($rd < $ra) pc += 1 + get_imm_signed(inst);
+        else pc++;
+        break;
       case 0x05:      // bne
         if ($rd != $ra) pc += 1 + get_imm_signed(inst);
         else pc++;
@@ -718,6 +744,10 @@ Comm exec_inst_silent(long max_count)
       case 0x15:      // bc1f
         if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
         else pc++;
+        break;
+      case 0x1e:      // fabs
+        $fd = ($fa) < 0 ? -($fa): ($fa);
+        pc++;
         break;
       case 0x1c:      // ftoi
         $rd = (int) ($fa);
@@ -808,6 +838,10 @@ Comm exec_inst(uint32_t inst)
           if (!test_flag) printf("sll r%d r%d %d\n", get_rd(inst), get_ra(inst), get_shift(inst));
           $rd = $ra << get_shift(inst);
           pc++; break;
+        case 0x2b:      // seq
+          if (!test_flag) printf("seq r%d r%d r%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+          $rd = ($ra == $rb);
+          pc++; break;
         case 0x08:      // jr
           reset_bold();
           if (!test_flag) printf("jr r%d\n", get_rd(inst));
@@ -872,6 +906,12 @@ Comm exec_inst(uint32_t inst)
           if ($fa == 0.0) fcond_reg |= 0x02;
           else fcond_reg &= 0xfffd;
           pc++; break;
+        case 0x29:      // feq
+          reset_bold();
+          if (!test_flag) printf("feq f%d f%d \n", get_ra(inst), get_rb(inst));
+          if ($fa == $fb) fcond_reg |= 0x02;
+          else fcond_reg &= 0xfffd;
+          pc++; break;
         case 0x06:      // fmv
           if (!test_flag) printf("fmv f%d f%d\n", get_rd(inst), get_ra(inst));
           $fd = $fa;
@@ -934,6 +974,12 @@ Comm exec_inst(uint32_t inst)
       if ($rd == $ra) pc += 1 + get_imm_signed(inst);
       else pc++;
       break;
+    case 0x06:      // blt
+      reset_bold();
+      if (!test_flag) printf("blt r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
+      if ($rd < $ra) pc += 1 + get_imm_signed(inst);
+      else pc++;
+      break;
     case 0x05:      // bne
       reset_bold();
       if (!test_flag) printf("bne r%d r%d %d\n", get_rd(inst), get_ra(inst), get_imm_signed(inst));
@@ -972,6 +1018,11 @@ Comm exec_inst(uint32_t inst)
       if (!test_flag) printf("bc1f %d\n", get_imm_signed(inst));
       if (!(fcond_reg&0x0002)) pc += 1 + get_imm_signed(inst);
       else pc++;
+      break;
+    case 0x1e:      // fabs
+      if (!test_flag) printf("fabs f%d f%d f%d\n", get_rd(inst), get_ra(inst), get_rb(inst));
+      $fd = ($fa) < 0 ? -($fa): ($fa);
+      pc++;
       break;
     case 0x1c:      // ftoi
       if (!test_flag) printf("ftoi r%d f%d\n", get_rd(inst), get_ra(inst));

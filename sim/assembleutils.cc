@@ -91,12 +91,14 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("ori")) ret = encode_i(0x0d, $r(1), $r(2), $(3));
   else if (!op.compare("slt")) ret = encode_r(0x00, 0x2a, $r(1), $r(2), $r(3), 0x00);
   else if (!op.compare("slti")) ret = encode_i(0x0a, $r(1), $r(2), $(3));
+  else if (!op.compare("seq")) ret = encode_r(0x00, 0x2b, $r(1), $r(2), $r(3), 0x00);   // 2nd
   // Shift
   else if (!op.compare("sll")) ret = encode_r(0x00, 0x00, $r(1), $r(2), 0x00, $(3));
   else if (!op.compare("sllv")) ret = encode_r(0x00, 0x04, $r(1), $r(2), $r(3), 0x00);
   // Jump
   else if (!op.compare("beq")) ret = encode_i(0x04, $r(1), $r(2), $(3));
   else if (!op.compare("bne")) ret = encode_i(0x05, $r(1), $r(2), $(3));
+  else if (!op.compare("blt")) ret = encode_i(0x06, $r(1), $r(2), $(3));    // 2nd
   else if (!op.compare("j")) ret = encode_j(0x02, $(1));
   else if (!op.compare("jr")) ret = encode_r(0x00, 0x08, $r(1), 0x00, 0x00, 0x00);
   else if (!op.compare("jal")) ret = encode_j(0x03, $(1));
@@ -107,6 +109,7 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("fsub")) ret = encode_r(0x11, 0x01, $f(1), $f(2), $f(3), 0x00);
   else if (!op.compare("fmul")) ret = encode_r(0x11, 0x02, $f(1), $f(2), $f(3), 0x00);
   else if (!op.compare("fdiv")) ret = encode_r(0x11, 0x03, $f(1), $f(2), $f(3), 0x00);
+  else if (!op.compare("feq")) ret = encode_r(0x11, 0x29, 0x00, $f(1), $f(2), 0x00);  // 2nd
   else if (!op.compare("fclt")) ret = encode_r(0x11, 0x20, 0x00, $f(1), $f(2), 0x00);
   else if (!op.compare("fcz")) ret = encode_r(0x11, 0x28, 0x00, $f(1), 0x00, 0x00);
   else if (!op.compare("fmv")) ret = encode_r(0x11, 0x06, $f(1), $f(2), 0x00, 0x00);
@@ -116,6 +119,7 @@ uint32_t assemble(std::vector<std::string> v)
   else if (!op.compare("swcZ")) ret = encode_i(0x38, $f(1), $r(2), $(3));
   else if (!op.compare("bc1t")) ret = encode_i(0x13, 0x08, 0x01, $(1)); // XXX
   else if (!op.compare("bc1f")) ret = encode_i(0x15, 0x08, 0x00, $(1));
+  else if (!op.compare("fabs")) ret = encode_i(0x1e, $r(1), $f(2), 0x00); // 2nd
   else if (!op.compare("ftoi")) ret = encode_i(0x1c, $r(1), $f(2), 0x00);
   else if (!op.compare("itof")) ret = encode_i(0x1d, $f(1), $r(2), 0x00);
   else if (!op.compare("flui")) ret = encode_i(0x3c, $f(1), 0x00, $(2));

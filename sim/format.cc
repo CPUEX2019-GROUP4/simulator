@@ -195,6 +195,10 @@ void init_table()
   ASSIGN(fsw, F, R, I);
   ASSIGN(flwab, F, R, R);
   ASSIGN(fswab, F, R, R);
+  ASSIGN(blt, R, R, I);
+  ASSIGN(seq, R, R, R);
+  ASSIGN(fabs, F, F, N);
+  ASSIGN(feq, F, F, N);
   // general register
   ASSIGN(nop, N, N, N);
   ASSIGN(add, R, R, R);
