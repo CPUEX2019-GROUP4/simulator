@@ -12,7 +12,7 @@ GCC version: 9.2.0
 目安として、8.3 sに対して8.2~8.4s代は普通に起こり得る。
 
 ## 実験日 1/22
-### 0c111c69
+### 0c111c6
 `./test.sh sudu.s contest.bin 1`の結果:
 ```
 total executed instructions: 2,183,261,623
@@ -21,7 +21,7 @@ user  8.202s
 sys   0.057s
 ```
 
-### 408f8152
+### 408f815
 `./test.sh sudu.s contest.bin 1`の結果:
 ```
 total executed instructions: 2,183,261,623
@@ -30,3 +30,19 @@ user  8.386s
 sys   0.053s
 ```
 
+### b53ce41
+`./test.sh sudu.s contest.bin 1`の結果:
+```
+total executed instructions: 2,183,261,623
+real  20.111s
+user  20.061s
+sys   0.041s
+```
+このコミットでは`get_opcode()`や`get_rd()`といった、
+32bitの命令からオペコード・オペランドを取り出す関数を、ファイル分割
+してみた。
+これは毎回実行されているから、2 billion * 4回くらい(opcode, rd, ra, rb)
+全体で実行されていることになる。
+やはり、それだけ実行されていると10秒は変わるということだ。
+分割コンパイルと動的リンクとは違う方法でファイル分割するプログラムを
+書こうというモチベーションが生まれた。

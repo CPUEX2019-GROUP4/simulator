@@ -13,7 +13,6 @@
 #include "stringutils.hh"
 #include "fpu.hh"
 #include "bit.hh"
-#include "instutils.hh"
 
 #define BYTES_INSTRUCTION 4
 #define LEN_INSTRUCTION 2000000
@@ -44,6 +43,17 @@ std::ofstream ofs;                // OUT 命令の出力ファイル
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 long r29_max, r30_max;
+
+static uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
+static uint32_t get_rd(uint32_t inst) {return (inst >> 21) & 0x1f;}
+static uint32_t get_ra(uint32_t inst) {return (inst >> 16) & 0x1f;}
+static uint32_t get_rb(uint32_t inst) {return (inst >> 11) & 0x1f;}
+static uint32_t get_shift(uint32_t inst) {return (inst >> 6) & 0x1f;}
+//static int32_t get_shift_signed(uint32_t inst) {return (inst & 0x3ff) - (inst & 0x400);}
+static uint32_t get_func(uint32_t inst) {return (inst >> 0) & 0x3f;}
+static uint16_t get_imm(uint32_t inst) {return (inst >> 0) & 0xffff;}
+static int16_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);}
+static uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
 
 inline void init_ofs(char *path)
 {
