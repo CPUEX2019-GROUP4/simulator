@@ -11,6 +11,8 @@
 #include <cmath>
 
 #include "stringutils.hh"
+#include "fpu.hh"
+#include "bit.hh"
 
 #define BYTES_INSTRUCTION 4
 #define LEN_INSTRUCTION 2000000
@@ -41,15 +43,6 @@ std::ofstream ofs;                // OUT 命令の出力ファイル
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 long r29_max, r30_max;
-
-union bits {
-  float f;
-  uint32_t ui32;
-  struct {
-    uint16_t lo;
-    uint16_t hi;
-  } lohi;
-} b;
 
 inline void init_ofs(char *path)
 {
@@ -105,64 +98,6 @@ void init_inst(char *pathname)
 
   return;
 }
-
-//XXX: fpuのcopy (for performance) (as of 15 Dec)
-#define MOUTPREC 11
-#define FINV_MINPREC 11
-#define FINV_LOOP_COUNT 1
-#define SQRT_LOOP_COUNT 1
-#define SQRT_MINPREC 10
-
-#define MUSE(prec) (0x00800000 - (1 << (23 - prec)))
-
-uint32_t finv_init_m(uint32_t m) {
-    b.ui32 = (m & MUSE(FINV_MINPREC)) | 0x3f800000;
-    b.f = 2.0f / b.f;
-    uint32_t m_ = b.ui32 & MUSE(MOUTPREC);
-    return m_;
-}
-
-uint32_t finv_init_u(float f) {
-    b.f = f;
-    uint32_t u = b.ui32;
-    uint32_t s = u & 0x80000000, e = (u >> 23) & 0x000000ff, m = u & 0x007fffff;
-    if (e == 0) return 0;
-    uint32_t m_ = finv_init_m(m);
-    uint32_t e_ = ((253 - e) & 0x000000ff) + (m & MUSE(FINV_MINPREC) ? 0 : 1);
-    uint32_t u_ = s | (e_ << 23) | m_;
-    return u_;
-}
-
-float finv_init(float f) {
-    b.ui32 = finv_init_u(f);
-    return b.f;
-}
-
-uint32_t sqrt_inv_init_m(uint32_t emod2, uint32_t m) {
-    b.ui32 = (m & MUSE(SQRT_MINPREC)) | (emod2 ? 0x3f800000 : 0x40000000);
-    b.f = 2 / sqrtf(b.f);
-    uint32_t m_ = b.ui32 & MUSE(MOUTPREC);
-    return m_;
-}
-
-uint32_t sqrt_inv_init_u(float f) {
-    b.f = f;
-    uint32_t u = b.ui32;
-    uint32_t s = u & 0x80000000, e = (u >> 23) & 0x000000ff, m = u & 0x007fffff;
-    if (e == 0) return 0;
-    uint32_t m_ = sqrt_inv_init_m(e & 1, m);
-    uint32_t e_ = 189 - ((e - 1) >> 1) + (!(m & MUSE(SQRT_MINPREC)) && (e & 1) ? 1 : 0);
-    uint32_t u_ = s | (e_ << 23) | m_;
-    return u_;
-}
-
-//float sqrt_inv_init(float f) {
-float sqrt_init(float f) {
-    b.ui32 = sqrt_inv_init_u(f);
-    return b.f;
-}
-
-//XXX: end of copy
 
 uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
 uint32_t get_rd(uint32_t inst) {return (inst >> 21) & 0x1f;}
