@@ -2,13 +2,16 @@ CC = g++
 CFLAGS = -Wall -O3
 LDFLAGS = -lm
 SRCS = $(shell find . -type f -name "*.cc")
-OBJS = $(shell find . -type f -name "*.cc" | grep -v "sim.cc" | grep -v "run.cc" | grep -v "run_label.cc" | grep -v "assemble.cc" | grep -v "preassemble.cc" | sed "s/\.cc/\.o/")
+OBJS = $(shell find . -type f -name "*.cc" | grep -v "manip.cc" | grep -v "sim.cc" | grep -v "run.cc" | grep -v "run_label.cc" | grep -v "assemble.cc" | grep -v "preassemble.cc" | sed "s/\.cc/\.o/")
 TARGETS = $(SRCS:%.cc=%)
 
-all: sim run swap assemble preassemble run_label
+all: sim run swap assemble preassemble run_label manip
 
 %.o: %.cc
 	$(CC) $(CFLAGS) -c $^ -o $@
+
+manip: $(OBJS) manip.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 preassemble: $(OBJS) preassemble.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
@@ -29,7 +32,7 @@ swap: swap.c
 	$(CC) $(LDFLAGS) $< -o $@
 
 clean:
-	rm $(OBJS) sim run swap assemble preassemble run_label sim.o run.o assemble.o preassemble.o run_label.o
+	rm $(OBJS) sim run swap assemble preassemble run_label manip sim.o run.o assemble.o preassemble.o run_label.o manip.o
 
 #sim: sim.cc
 #	$(CC) $(LDFLAGS) $< -o $@

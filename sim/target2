@@ -1,0 +1,7 @@
+//?
+//?func1@2
+int main(void)
+{
+  //?definition
+  return 0;
+}
