@@ -10,7 +10,7 @@
 
 #include "stringutils.hh"
 
-#define POSTFIX ".gen"
+#define POSTFIX ".cc"
 
 std::unordered_map<std::string,int> t; // table
 std::string SOURCE;

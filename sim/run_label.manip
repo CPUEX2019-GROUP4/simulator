@@ -1,3 +1,6 @@
+// jr r31 はlabelstat に含めない
+//?definition@2
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -15,7 +18,7 @@
 #include "bit.hh"
 
 #define BYTES_INSTRUCTION 4
-#define LEN_INSTRUCTION 2000000
+#define LEN_INSTRUCTION 200000
 #define N_REG 32
 #define SIZE_MEM (2<<20)
 
@@ -39,21 +42,13 @@ uint32_t total_inst = 0;
 std::unordered_map<int,int> ninsts;  // 命令番号に対するソースコード行番号のmap
 std::unordered_map<int,int> rev_ninsts;  // ↑の逆
 std::unordered_map<std::string,int> labels;  // ラベルに対するソースコード行番号のmap
+std::unordered_map<int,std::string> rev_labels;  // ↑の逆
+std::unordered_map<int,int> pc_labelcount;      // 各PCへのジャンプ回数
 std::ofstream ofs;                // OUT 命令の出力ファイル
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 long r29_max, r30_max;
-
-static uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
-static uint32_t get_rd(uint32_t inst) {return (inst >> 21) & 0x1f;}
-static uint32_t get_ra(uint32_t inst) {return (inst >> 16) & 0x1f;}
-static uint32_t get_rb(uint32_t inst) {return (inst >> 11) & 0x1f;}
-static uint32_t get_shift(uint32_t inst) {return (inst >> 6) & 0x1f;}
-//static int32_t get_shift_signed(uint32_t inst) {return (inst & 0x3ff) - (inst & 0x400);}
-static uint32_t get_func(uint32_t inst) {return (inst >> 0) & 0x3f;}
-static uint16_t get_imm(uint32_t inst) {return (inst >> 0) & 0xffff;}
-static int16_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);}
-static uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
+unsigned long inst_counter = 0;                // 命令実行回数の統計に使う
 
 inline void init_ofs(char *path)
 {
@@ -70,15 +65,22 @@ inline void init_fin(char *path)
 void init_labels(char *path)
 {
   std::string label;
-  int line = 0;
+  int ninst = 0;
   std::ifstream ifs(path);
   if (ifs.fail()) {std::cerr << "(ifs)File '" << path << "' could not open\n"; exit(1);}
   while (!ifs.eof()) {
-    ifs >> label >> line;
-    labels.emplace(std::make_pair(label, line));
+    ifs >> label >> ninst;
+    labels.emplace(std::make_pair(label, ninst));
+    rev_labels.emplace(std::make_pair(ninst, label));
   }
 }
 
+inline void label_stat(uint32_t pc)
+{
+  auto search = pc_labelcount.find(pc);
+  if (search != pc_labelcount.end()) search->second++;
+  else pc_labelcount.emplace(std::make_pair(pc, 1));
+}
 void init_ninsts(char *path)
 {
   int inst = 0;
@@ -110,6 +112,19 @@ void init_inst(char *pathname)
   return;
 }
 
+static uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}
+static uint32_t get_rd(uint32_t inst) {return (inst >> 21) & 0x1f;}
+static uint32_t get_ra(uint32_t inst) {return (inst >> 16) & 0x1f;}
+static uint32_t get_rb(uint32_t inst) {return (inst >> 11) & 0x1f;}
+static uint32_t get_shift(uint32_t inst) {return (inst >> 6) & 0x1f;}
+//static int32_t get_shift_signed(uint32_t inst) {return (inst & 0x3ff) - (inst & 0x400);}
+//int32_t get_shift_signed(uint32_t inst) {return (int16_t)(inst & 0x3ff);}
+static uint32_t get_func(uint32_t inst) {return (inst >> 0) & 0x3f;}
+static uint16_t get_imm(uint32_t inst) {return (inst >> 0) & 0xffff;}
+static int16_t get_imm_signed(uint32_t inst) {return (inst & 0x7fff) - (inst & 0x8000);}
+//int16_t get_imm_signed(uint32_t inst) {return (int16_t)(inst & 0x7fff);}
+static uint32_t get_addr(uint32_t inst) {return (inst >> 0) & 0x3ffffff;}
+
 int main(int argc, char **argv)
 {
   if (argc != 7) {
@@ -130,7 +145,7 @@ int main(int argc, char **argv)
   fin = fopen(argv[6], "r");
   if (!fin) {std::cerr << "(fin)File '" << argv[6] << "' could not be opened\n"; exit(1);}
 
-  puts("run only mode!!");
+  puts("run only mode (label)!!");
 
   try {
     while (1) {
@@ -179,10 +194,12 @@ int main(int argc, char **argv)
               pc++; break;
             case 0x08:      // jr
               pc = $rd;
+              if (get_rd(inst) != 31) label_stat(pc); // XXX: 'jr r31'は含めない
               break;
             case 0x0f:      // jalr
               int_reg[31] = pc + 1;
               pc = $rd;
+              label_stat(pc);
               break;
             case 0x33:      // lwab
               memcpy((unsigned char*)(&($rd)), &mem.at($ra+$rb), 4);
@@ -286,10 +303,12 @@ int main(int argc, char **argv)
           break;
         case 0x02:      // j
           pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+          label_stat(pc);
           break;
         case 0x03:      // jal
           int_reg[31] = pc + 1;
           pc = ((pc+1) & 0xf0000000) | get_addr(inst);
+          label_stat(pc);
           break;
         case 0x30:      // lwcZ
           memcpy((unsigned char*)(&($fd)), &mem.at($ra + get_imm_signed(inst)), 4);
@@ -360,9 +379,25 @@ int main(int argc, char **argv)
     std::cerr << "died at " << s << "th instruction of pc: " << pc << ", line: " << ninsts.at(pc) << "\n";
   }
 
+  // XXX: label count (dirty unordered coding)
+  std::ofstream f("labelstat", std::ios::out | std::ios::trunc);
+  for (auto it : pc_labelcount) {
+    auto search = rev_labels.find(it.first);
+    if (search == rev_labels.end()) continue;
+    std::string lab = search->second;
+    f << lab << "\t" << it.second << std::endl;
+  }
+  f.flush();
+  f.close();
+  // end of label count (zako programmer)
+
   puts("\nsimulator terminated");
   std::cout <<"total executed instructions: " << FormatWithCommas(total_executed) << std::endl;
   //printf("max sp(r29): %ld, max hp(r30): %ld\n", r29_max, r30_max);
+
+  // XXX: inst count
+  if (inst_counter != 0) std::cout << "inst counter: \x1b[1m" << inst_counter << "\x1b[0m\n";
+  // end of inst count
 
   free(inst_reg);
   ofs.flush();
