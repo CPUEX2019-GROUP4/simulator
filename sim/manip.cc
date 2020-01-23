@@ -28,7 +28,7 @@ void print_usage(char *program_name)
 void set_table(char *filename)
 {
   std::ifstream ifs(filename);
-  if (ifs.fail()) {std::cerr << "File " << filename << "cannot be opend. Abort\n"; exit(1);}
+  if (ifs.fail()) {std::cerr << "File " << filename << " cannot be opend. Abort\n"; exit(1);}
 
   std::string s;
   std::vector<std::string> v;
@@ -107,7 +107,7 @@ void paste_to_target(std::ifstream& fs, std::ifstream& ifs, std::ofstream& ofs) 
         std::cerr << "Warning! Empty token name found at line " << l << ".\n";
         continue;
       }
-      std::cout << v[1] << "(ws): " << count << std::endl;
+      //std::cout << v[1] << "(ws): " << count << std::endl;
 
       int level = 0;
       std::vector<std::string> vv;
@@ -147,7 +147,6 @@ void paste_to_target(std::ifstream& fs, std::ifstream& ifs, std::ofstream& ofs) 
       }
     }
   }
-  std::cout << "done\n";
 }
 
 int main(int argc, char **argv)
@@ -163,25 +162,25 @@ int main(int argc, char **argv)
   for (auto it : TARGETS) std::cout << it << " ";
   std::cout << std::endl;
 
-  std::cout << "TOKEN: " << TOKEN << std::endl;
+  //std::cout << "TOKEN: " << TOKEN << std::endl;
 
   std::ifstream ifs(SOURCE);
-  if (ifs.fail()) {std::cerr << "File " << SOURCE << "cannot be opend. Abort\n"; exit(1);}
+  if (ifs.fail()) {std::cerr << "File " << SOURCE << " cannot be opend. Abort\n"; exit(1);}
 
   scan_source(ifs);
-
-  //XXX
-  std::cout << "func1: " << t["func1"] << std::endl;
-  std::cout << "definition: " << t["definition"] << std::endl;
 
   for (auto it : TARGETS) {
     std::ifstream fs(it);
     std::ofstream ofs(it+POSTFIX);
-    if (fs.fail()) {std::cerr << "File " << it << "cannot be opend. Abort\n"; exit(1);}
-    if (ofs.fail()) {std::cerr << "File " << it+POSTFIX << "cannot be opend. Abort\n"; exit(1);}
+    if (fs.fail()) {std::cerr << "File " << it << " cannot be opend. Abort\n"; exit(1);}
+    if (ofs.fail()) {std::cerr << "File " << it+POSTFIX << " cannot be opend. Abort\n"; exit(1);}
+
+    std::cout << "Manip on " << it+POSTFIX << " ...\n";
     paste_to_target(fs, ifs, ofs);
     fs.close();
   }
+
+  std::cout << "All done.\n";
 
   ifs.close();
 
