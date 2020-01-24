@@ -1,4 +1,3 @@
-//?definition
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -16,17 +15,7 @@
 #include "fpu.hh"
 #include "bit.hh"
 
-#define BYTES_INSTRUCTION 4
-#define LEN_INSTRUCTION 200000
-#define N_REG 32
-#define SIZE_MEM (2<<20)
-
-#define $rd (int_reg[get_rd(inst)])
-#define $ra (int_reg[get_ra(inst)])
-#define $rb (int_reg[get_rb(inst)])
-#define $fd (float_reg[get_rd(inst)])
-#define $fa (float_reg[get_ra(inst)])
-#define $fb (float_reg[get_rb(inst)])
+//?definitions
 
 enum Comm {STEP, PRINT, CLEAR, MONITOR, UNMONITOR, BREAK, UNBREAK, HELP, NIL, QUIT, ERR, RUN, FAST, NOP, OP};
 
@@ -71,48 +60,7 @@ FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 long r29_max, r30_max;
 
-void init(void)
-{
-  breakpoint = -1;
-  dest_reg = -100;
-}
-
-void init_ofs(char *path)
-{
-  ofs.open(path, std::ios::out | std::ios::trunc); // append はつけない
-  if (ofs.fail()) {std::cerr << "(ofs)File '" << path << "' could not be opened\n"; exit(1);}
-}
-
-void init_fin(char *path)
-{
-  fin = fopen(path, "r");
-  if (!fin) {std::cerr << "(fin)File '" << path << "' could not be opened\n"; exit(1);}
-}
-
-void init_labels(char *path)
-{
-  std::string label;
-  int line = 0;
-  std::ifstream ifs(path);
-  if (ifs.fail()) {std::cerr << "(ifs)File '" << path << "' could not open\n"; exit(1);}
-  while (!ifs.eof()) {
-    ifs >> label >> line;
-    labels.emplace(std::make_pair(label, line));
-  }
-}
-
-void init_ninsts(char *path)
-{
-  int inst = 0;
-  int line = 0;
-  std::ifstream ifs(path);
-  if (ifs.fail()) {std::cerr << "File '" << path << "' could not open\n"; exit(1);}
-  while (!ifs.eof()) {
-    ifs >> inst >> line;
-    ninsts.emplace(std::make_pair(inst, line));
-    rev_ninsts.emplace(std::make_pair(line, inst));
-  }
-}
+//?init_files@1
 
 /** for register display */
 void set_bold(int i)
@@ -239,24 +187,6 @@ void print_regs(void)
     memcpy((unsigned char*)&b.f, (unsigned char*)&mem.at(it), 4);
     printf("\t%d: M[%ld:%ld](:flt) = %f\n", ++count, it, it+3, b.f);
   }
-}
-
-/**--- read instructions from a file and save them to inst_reg ---*/
-void init_inst(char *pathname)
-{
-  FILE *fin;
-
-  fin = fopen(pathname, "rb");
-  if (fin == NULL) {perror("fopen"); exit(1);}
-
-  inst_reg = (uint32_t*) malloc(LEN_INSTRUCTION * BYTES_INSTRUCTION);
-  if (inst_reg == NULL) {perror("malloc"); exit(1);}
-  total_inst = fread(inst_reg, BYTES_INSTRUCTION, LEN_INSTRUCTION, fin);
-  printf("loaded %d instructions.\n", total_inst);
-
-  if (fclose(fin)) {perror("fclose"); exit(1);}
-
-  return;
 }
 
 static uint32_t get_opcode(uint32_t inst) {return (inst >> 26) & 0x3f;}

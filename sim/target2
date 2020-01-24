@@ -1,7 +1,6 @@
-//?
-//?func1@2
+//?func1
 int main(void)
 {
-  //?definition
+  //?definitions
   return 0;
 }

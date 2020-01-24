@@ -12,7 +12,7 @@
 
 #define POSTFIX ".cc"
 
-std::unordered_map<std::string,int> t; // table
+std::unordered_map<std::string,std::pair<int,int>> t; // table (MACRO_NAME -> (seekg, base_depth2)
 std::string SOURCE;
 std::vector<std::string> TARGETS;
 std::string LTOKEN;
@@ -55,6 +55,12 @@ void set_table(char *filename)
   }
 }
 
+int count_leading_whitespaces(std::string s) {
+  int ret = 0;
+  while (s[ret] == ' ') ret++;
+  return ret;
+}
+
 void scan_source(std::ifstream& ifs) {
 
   std::string s;
@@ -67,18 +73,22 @@ void scan_source(std::ifstream& ifs) {
     std::string ss = split(s, " ")[0];            // 行頭のスペース除去
     v = split("foo"+ss, LTOKEN);
     if (!split(v[0], " ")[0].compare("foo")) {  // found the LTOKEN
-      t[v[1]] = ifs.tellg();
+      t[v[1]] = std::make_pair(ifs.tellg(), count_leading_whitespaces(s));
     }
   }
 }
 
-int count_leading_whitespaces(std::string s) {
-  int ret = 0;
-  while (s[ret] == ' ') ret++;
-  return ret;
+std::string trim(std::string s) {
+  int i = 0;
+  while (s[i] == ' ' || s[i] == '\t') i++;
+  int j = s.length() - 1;
+  while (s[j] == ' ' || s[j] == '\t') j--;
+  return s.substr(i,j-i+1);
 }
 
 int count_depth(std::string s) {
+  if (!s.compare("")) return 0;
+
   int ret = 0;
   ret += std::count(s.begin(), s.end(), '(');
   ret -= std::count(s.begin(), s.end(), ')');
@@ -86,7 +96,19 @@ int count_depth(std::string s) {
   ret -= std::count(s.begin(), s.end(), '}');
   ret += std::count(s.begin(), s.end(), '[');
   ret -= std::count(s.begin(), s.end(), ']');
+  // switch-caseでcase foo: の次の行の対応
+  std::string ss = split(s, "//")[0];
+  ss = trim(split(ss, "/*")[0]);
+  if (ss[ss.length()-1] == ':') ret++;
+  else if (!trim(ss).compare("break;")) ret--;
+  else if (s.find("break;") != std::string::npos && s.find("pc++;") != std::string::npos) ret--;
   return ret;
+}
+
+std::string trim(std::string s, int n) {
+  int i = 0;
+  while ((s[i] == ' ' || s[i] == '\t') && i < n) i++;
+  return s.substr(i, s.length() - i);
 }
 
 void paste_to_target(std::ifstream& fs, std::ifstream& ifs, std::ofstream& ofs) {
@@ -111,7 +133,7 @@ void paste_to_target(std::ifstream& fs, std::ifstream& ifs, std::ofstream& ofs) 
 
       int level = 0;
       std::vector<std::string> vv;
-      vv = split(v[1], "@");
+      vv = split(v[1], "@");    // v[1]は "definition@1" など
       if (vv.size() > 1) {
         try {
           level = std::stoi(split(vv[1], " ")[0]);
@@ -124,26 +146,43 @@ void paste_to_target(std::ifstream& fs, std::ifstream& ifs, std::ofstream& ofs) 
       int level2 = level * 2;
 
       // start copying from ifs
+      //std::cout << "Found the TOKEN " << vv[0] << ".\n";
       ifs.clear();          // EOFフラグをクリアしないとseekg()できない
-      ifs.seekg(t[vv[0]]);
+      ifs.seekg(t[vv[0]].first);
 
       int flag = 1;
-      int depth2 = 0;
-      while (flag) {
-        if (!std::getline(ifs, s)) flag = 0;
+      int depth2 = 0;      // { で終わる次の行は2つスペースがあるのが普通、など、いくつスペースがあって然るべきかを表す
+      int depth2_pre = 0;      // 次にdepth2 となるもの
+      int base_depth2 = t[vv[0]].second;    // vv[0] は↑の例では"definition"
+      //std::cout << "base_depth2 for `" << s << "` is " << base_depth2 << ".\n";
+      while (flag && std::getline(ifs, s)) {
+        //if (!std::getline(ifs, s)) flag = 0;
+        if (!s.compare("")) {      // 空行
+          ofs << "\n";
+          continue;
+        }
         ss = split(s, " ")[0];            // 行頭のスペース除去
         v = split("foo"+ss, RTOKEN);
         if (!split(v[0], " ")[0].compare("foo")) {  // found the RTOKEN
           flag = 0;
         }
-        if (!s.compare("")) {     // 空行
+        if (!ss.compare("")) {     // 空行
           ofs << "\n";
           continue;
         }
-        depth2 += 2 * count_depth(s);
-        if (count_leading_whitespaces(s) - depth2 > level2) continue;  // 大きいlevel
-        for (int i=0; i<count; i++) ofs << " ";
-        ofs << s << std::endl;
+        //depth2 += 2 * count_depth(s);
+        depth2 = depth2_pre;
+        depth2_pre += 2 * count_depth(s);
+        //if (count_leading_whitespaces(s) - base_depth2 > level2 + depth2) {
+        //if ((count_leading_whitespaces(s) - base_depth2 > level2 + depth2) || (count_leading_whitespaces(s) - base_depth2 > level2 + depth2_pre)) {
+        if (((count_leading_whitespaces(s) - base_depth2 > level2 + depth2) || (count_leading_whitespaces(s) - base_depth2 > level2 + depth2_pre))&&((trim(s).compare("pc++; break;"))||(trim(s).compare("break;")))) {
+          //std::cout << "skipping " << s << ". (higher level)\n";
+          //std::cout << "leading ws: " << count_leading_whitespaces(s) << ", " << "depth2: " << depth2 << ", base_depth2: " << base_depth2 << ", level2: " << level2 << ".\n";
+          continue;  // 大きいlevel
+        }
+        //for (int i=0; i < count - base_depth2; i++) ofs << " ";
+        for (int i=0; i < count; i++) ofs << " ";
+        ofs << trim(s, base_depth2) << std::endl;
       }
     }
   }
@@ -168,6 +207,12 @@ int main(int argc, char **argv)
   if (ifs.fail()) {std::cerr << "File " << SOURCE << " cannot be opend. Abort\n"; exit(1);}
 
   scan_source(ifs);
+
+  /*
+  for (auto it : t) {
+    std::cout << it.first << " --> " << it.second << std::endl;
+  }
+  */
 
   for (auto it : TARGETS) {
     std::ifstream fs(it);

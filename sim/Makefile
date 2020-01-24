@@ -8,6 +8,7 @@ MANIPCONF = manip.conf
 MANIPTARGETS = sim.manip run.manip run_label.manip
 
 all: manip domanip sim run swap assemble preassemble run_label
+	echo all
 
 %.manip.o: %.manip.cc
 	$(CC) $(CFLAGS) -c $^ -o $@
