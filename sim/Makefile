@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -O3
+CFLAGS = -Wall -O3 -std=c++11
 LDFLAGS = -lm
 SRCS = $(shell find . -type f -name "*.cc")
 OBJS = $(shell find . -type f -name "*.cc" | grep -v "sim.cc" | grep -v "run.cc" | grep -v "run_label.cc" | grep -v "assemble.cc" | grep -v "preassemble.cc" | sed "s/\.cc/\.o/")

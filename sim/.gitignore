@@ -5,6 +5,7 @@ a.out
 *.big
 input.bin
 *.s
+!raytrace.s
 *.ppm
 labelstat
 *.bak

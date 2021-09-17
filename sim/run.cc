@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,6 +10,7 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <unordered_set>
 
 #include "stringutils.hh"
 
@@ -41,6 +43,7 @@ std::ofstream ofs;                // OUT 命令の出力ファイル
 FILE *fin;                // IN 命令のファイル
 long total_executed = 0;          // 実行された総演算命令数
 long r29_max, r30_max;
+long r29_min, r30_min;
 
 union bits {
   float f;
@@ -197,6 +200,8 @@ int main(int argc, char **argv)
   fin = fopen(argv[6], "r");
   if (!fin) {std::cerr << "(fin)File '" << argv[6] << "' could not be opened\n"; exit(1);}
 
+  //std::unordered_set<long> sp, hp;
+
   puts("run only mode!!");
 
   try {
@@ -211,6 +216,11 @@ int main(int argc, char **argv)
 
       //if (int_reg[29] > r29_max) r29_max = int_reg[29];
       //if (int_reg[30] > r30_max) r30_max = int_reg[30];
+      //if (int_reg[29] < r29_min) r29_min = int_reg[29];
+      //if (int_reg[30] < r30_min) r30_min = int_reg[30];
+
+      //sp.emplace(int_reg[29]);
+      //hp.emplace(int_reg[30]);
 
       if (inst == 0) {printf("nop\n"); break;}   // nop
 
@@ -430,6 +440,20 @@ int main(int argc, char **argv)
   puts("\nsimulator terminated");
   std::cout <<"total executed instructions: " << FormatWithCommas(total_executed) << std::endl;
   //printf("max sp(r29): %ld, max hp(r30): %ld\n", r29_max, r30_max);
+  //printf("min sp(r29): %ld, min hp(r30): %ld\n", r29_min, r30_min);
+
+
+  //std::ofstream spf, hpf;
+  //spf.open("sp", std::ios::out | std::ios::trunc); // append はつけない
+  //if (spf.fail()) {std::cerr << "(ofs)File '" << "sp" << "' could not be opened\n"; exit(1);}
+  //hpf.open("hp", std::ios::out | std::ios::trunc); // append はつけない
+  //if (hpf.fail()) {std::cerr << "(ofs)File '" << "hp" << "' could not be opened\n"; exit(1);}
+
+  //for (auto &e: sp) spf << e << std::endl;
+  //for (auto &e: hp) hpf << e << std::endl;
+
+  //spf.flush(); spf.close();
+  //hpf.flush(); hpf.close();
 
   free(inst_reg);
   ofs.flush();

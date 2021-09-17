@@ -1,5 +1,6 @@
 // jr r31 はlabelstat に含めない
 
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
